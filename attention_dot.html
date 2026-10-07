@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>注意課題：消えたドットをタッチ</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f7f8;--card:#fff;--ink:#27343b;--sub:#6b7b84;--teal:#1f8a8a;--gold:#d9a21b;--ok:#2e9e5b;--ng:#d6453d;--dot:#1f8a8a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14191c;--card:#1e262a;--ink:#e8eef0;--sub:#93a3ab;--dot:#4fc1c1}}
+:root[data-theme="dark"]{--bg:#14191c;--card:#1e262a;--ink:#e8eef0;--sub:#93a3ab;--dot:#4fc1c1}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+.screen{display:none;height:100%;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px}
+.screen.on{display:flex}
+.card{background:var(--card);border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+h1{font-size:22px;margin:0 0 16px;color:var(--teal);text-align:center}
+.row{display:flex;justify-content:space-between;align-items:center;margin:12px 0;font-size:17px;gap:12px}
+select{font-size:18px;padding:8px 10px;border-radius:8px;border:1px solid var(--sub);background:var(--bg);color:var(--ink)}
+button{font-size:20px;font-weight:700;border:0;border-radius:12px;padding:14px 24px;background:var(--teal);color:#fff;width:100%;margin-top:12px}
+button.sub{background:var(--sub);font-size:15px;padding:8px 14px;width:auto;margin:0}
+#game{padding:0;gap:0;justify-content:flex-start}
+#bar{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;box-sizing:border-box;font-size:15px;color:var(--sub)}
+#grid{flex:1;width:100%;display:grid;padding:8px;box-sizing:border-box;min-height:0}
+.cell{display:flex;align-items:center;justify-content:center;position:relative}
+.dot{width:70%;aspect-ratio:1;border-radius:50%;background:var(--dot);max-height:70%;pointer-events:none;transition:opacity .08s}
+.dot.gone{opacity:0}
+.cell.ok::after,.cell.ng::after{content:"";position:absolute;width:76%;aspect-ratio:1;max-height:76%;border-radius:50%;box-sizing:border-box;border:6px solid var(--ok)}
+.cell.ng::after{border-color:var(--ng)}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.q{background:var(--bg);border-radius:12px;padding:14px 6px;text-align:center}
+.q b{display:block;font-size:30px;color:var(--teal)}
+.q span{font-size:14px;color:var(--sub)}
+.sum{text-align:center;font-size:16px;color:var(--sub);line-height:1.7}
+</style>
+</head>
+<body>
+<div id="setup" class="screen on">
+ <div class="card">
+  <h1>消えたドットをタッチ</h1>
+  <div class="row"><label for="rows">縦の列数</label><select id="rows"><option>2</option><option>4</option><option selected>6</option><option>8</option></select></div>
+  <div class="row"><label for="cols">横の列数</label><select id="cols"><option>8</option><option selected>12</option><option>16</option><option>20</option></select></div>
+  <div class="row"><label for="trials">試行回数</label><select id="trials"><option>12</option><option selected>20</option><option>40</option></select></div>
+  <button id="start">スタート</button>
+ </div>
+</div>
+
+<div id="game" class="screen">
+ <div id="bar"><span id="prog"></span><button class="sub" id="stop">中止</button></div>
+ <div id="grid"></div>
+</div>
+
+<div id="result" class="screen">
+ <div class="card">
+  <h1>結果</h1>
+  <div class="sum" id="sum"></div>
+  <div class="quad" id="quad"></div>
+  <button id="again">もう一度</button>
+ </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const show=id=>{["setup","game","result"].forEach(s=>$(s).classList.toggle("on",s===id))};
+let R,C,N,cells,log,idx,targets,cur,timer,t0,locked,active;
+const QN={TL:"左上",TR:"右上",BL:"左下",BR:"右下"};
+
+function build(){
+  const g=$("grid");g.innerHTML="";cells=[];
+  g.style.gridTemplateColumns=`repeat(${C},1fr)`;g.style.gridTemplateRows=`repeat(${R},1fr)`;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const d=document.createElement("div");d.className="cell";
+    d.innerHTML='<div class="dot"></div>';
+    d.addEventListener("pointerdown",e=>{e.preventDefault();tap(r,c)});
+    g.appendChild(d);cells.push(d);
+  }
+}
+const cell=(r,c)=>cells[r*C+c];
+function quadOf(r,c){return (r<R/2?"T":"B")+(c<C/2?"L":"R")}
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a));
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(0,i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function makeTargets(){
+  const qs=["TL","TR","BL","BR"],list=[];
+  for(let i=0;i<N;i++)list.push(qs[i%4]);
+  shuffle(list);
+  return list.map(q=>{
+    const r0=q[0]==="T"?0:R/2,c0=q[1]==="L"?0:C/2;
+    return [rnd(r0,r0+R/2),rnd(c0,c0+C/2)];
+  });
+}
+function begin(){
+  R=+$("rows").value;C=+$("cols").value;N=+$("trials").value;
+  build();log=[];idx=0;targets=makeTargets();active=true;show("game");next();
+}
+function next(){
+  if(!active)return;
+  if(idx>=N){return finish()}
+  $("prog").textContent=`${idx+1} / ${N}`;
+  locked=true;cur=null;
+  cells.forEach(c=>{c.className="cell";c.firstChild.classList.remove("gone")});
+  timer=setTimeout(()=>{
+    cur=targets[idx];cell(...cur).firstChild.classList.add("gone");
+    t0=performance.now();locked=false;
+  },rnd(2000,5001));
+}
+function tap(r,c){
+  if(locked||!cur)return;
+  locked=true;
+  const rt=performance.now()-t0;
+  const ok=(r===cur[0]&&c===cur[1]);
+  log.push({q:quadOf(cur[0],cur[1]),ok,rt});
+  cell(r,c).classList.add(ok?"ok":"ng");
+  if(!ok)cell(...cur).classList.add("ok");
+  idx++;
+  timer=setTimeout(next,700);
+}
+function finish(){
+  active=false;clearTimeout(timer);
+  const st={TL:[0,0],TR:[0,0],BL:[0,0],BR:[0,0]};
+  let okAll=0,rtSum=0;
+  log.forEach(l=>{st[l.q][1]++;if(l.ok){st[l.q][0]++;okAll++;rtSum+=l.rt}});
+  const pct=(a,b)=>b?Math.round(a/b*100):"-";
+  $("sum").innerHTML=`全体の正答率：<b>${pct(okAll,log.length)}%</b>（${okAll}/${log.length}）<br>`+
+   `正答時の平均反応時間：${okAll?(rtSum/okAll/1000).toFixed(2)+" 秒":"-"}<br>盤面：縦${R}列 × 横${C}列`;
+  $("quad").innerHTML=["TL","TR","BL","BR"].map(q=>
+   `<div class="q"><span>${QN[q]}</span><b>${pct(...st[q])}%</b><span>${st[q][0]} / ${st[q][1]}</span></div>`).join("");
+  show("result");
+}
+$("start").onclick=begin;
+$("again").onclick=()=>show("setup");
+$("stop").onclick=()=>{clearTimeout(timer);active=false;log.length?finish():show("setup")};
+})();
+</script>
+</body>
+</html>
