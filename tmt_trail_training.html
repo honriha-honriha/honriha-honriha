@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>数字つなぎトレーニング</title>
+<style>
+  :root{
+    --teal-900:#0f3d3e;
+    --teal-700:#0f766e;
+    --teal-600:#0e8074;
+    --teal-500:#14b8a6;
+    --teal-100:#ccfbf1;
+    --gold-500:#e8ac00;
+    --gold-100:#fff3cc;
+    --slate-900:#1e293b;
+    --slate-500:#64748b;
+    --slate-300:#cbd5e1;
+    --slate-100:#f1f5f9;
+    --white:#ffffff;
+    --red-500:#e0473f;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:linear-gradient(180deg,var(--slate-100) 0%,#e7edf3 100%);
+    color:var(--slate-900);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .app{
+    width:100%;
+    max-width:820px;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+  header.app-header{
+    background:var(--teal-700);
+    color:var(--white);
+    padding:18px 20px;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(15,61,62,0.25);
+  }
+  header.app-header h1{
+    margin:0;
+    font-size:1.3rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+  .screen{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:20px;
+    gap:18px;
+  }
+  .hidden{display:none !important;}
+
+  /* --- settings --- */
+  .setting-card{
+    background:var(--white);
+    border-radius:20px;
+    padding:22px;
+    box-shadow:0 4px 16px rgba(30,41,59,0.08);
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+  }
+  .setting-group label.group-title{
+    display:block;
+    font-size:0.95rem;
+    font-weight:700;
+    color:var(--teal-900);
+    margin-bottom:10px;
+  }
+  .choice-buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .choice-btn{
+    flex:1 1 auto;
+    min-width:64px;
+    padding:14px 10px;
+    border-radius:14px;
+    border:2px solid var(--teal-700);
+    background:var(--white);
+    color:var(--teal-700);
+    font-size:1.05rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s, color .15s, transform .1s;
+  }
+  .choice-btn:active{transform:scale(0.96);}
+  .choice-btn.selected{
+    background:var(--teal-700);
+    color:var(--white);
+  }
+  #hintDelayGroup.hidden{display:none;}
+
+  .btn-primary{
+    background:var(--teal-700);
+    color:var(--white);
+    border:none;
+    border-radius:16px;
+    padding:18px;
+    font-size:1.15rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 4px 12px rgba(15,118,110,0.35);
+    transition:background .15s, transform .1s;
+  }
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-primary:hover{background:var(--teal-600);}
+
+  .btn-secondary{
+    background:var(--white);
+    color:var(--slate-500);
+    border:2px solid var(--slate-300);
+    border-radius:14px;
+    padding:12px 18px;
+    font-size:1rem;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-secondary.small{padding:8px 14px;font-size:0.9rem;}
+
+  /* --- game --- */
+  .game-hud{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--white);
+    border-radius:16px;
+    padding:14px 18px;
+    box-shadow:0 4px 12px rgba(30,41,59,0.08);
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .hud-item{
+    font-size:1rem;
+    color:var(--slate-500);
+    font-weight:600;
+  }
+  .hud-item span{
+    color:var(--teal-900);
+    font-size:1.3rem;
+    font-weight:800;
+    margin-left:4px;
+  }
+  .hud-item-next{
+    font-size:1.1rem;
+    color:var(--teal-900);
+  }
+  .hud-item-next span{
+    color:var(--gold-500);
+    font-size:1.7rem;
+    font-weight:900;
+    margin-left:6px;
+  }
+  .play-area{
+    position:relative;
+    background:var(--white);
+    border-radius:20px;
+    box-shadow:0 4px 16px rgba(30,41,59,0.08);
+    flex:1;
+    min-height:420px;
+    height:min(62vh,560px);
+    overflow:hidden;
+    touch-action:manipulation;
+  }
+  .circle{
+    position:absolute;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    border:3px solid var(--teal-700);
+    background:var(--white);
+    color:var(--teal-900);
+    cursor:pointer;
+    user-select:none;
+    transition:background .15s, transform .1s, border-color .15s, opacity .2s;
+  }
+  .circle:active{transform:scale(0.92);}
+  .circle.done{
+    background:var(--slate-100);
+    border-color:var(--slate-300);
+    color:var(--slate-500);
+    cursor:default;
+    opacity:0.5;
+  }
+  .circle.done-marked{
+    background:var(--white);
+    border-color:var(--teal-700);
+    color:var(--teal-900);
+    cursor:default;
+    opacity:1;
+  }
+  .circle.wrong{
+    animation:shake .3s;
+    border-color:var(--red-500);
+  }
+  .circle.hint-blink{
+    animation:hintPulse 0.9s infinite;
+    border-color:var(--gold-500);
+  }
+  @keyframes shake{
+    10%,90%{transform:translateX(-4px);}
+    20%,80%{transform:translateX(5px);}
+    30%,50%,70%{transform:translateX(-7px);}
+    40%,60%{transform:translateX(7px);}
+  }
+  @keyframes hintPulse{
+    0%{box-shadow:0 0 0 0 rgba(232,172,0,0.65); background:var(--white);}
+    50%{box-shadow:0 0 0 16px rgba(232,172,0,0); background:var(--gold-100);}
+    100%{box-shadow:0 0 0 0 rgba(232,172,0,0); background:var(--white);}
+  }
+
+  /* --- result --- */
+  .result-card{
+    background:var(--white);
+    border-radius:20px;
+    padding:36px 24px;
+    box-shadow:0 4px 16px rgba(30,41,59,0.08);
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    margin:auto 0;
+  }
+  .result-card h2{
+    margin:0;
+    color:var(--teal-900);
+    font-size:1.3rem;
+  }
+  .result-time{
+    font-size:3rem;
+    font-weight:800;
+    color:var(--teal-700);
+    letter-spacing:0.02em;
+  }
+  .result-sub{
+    color:var(--slate-500);
+    font-size:1rem;
+    margin:0;
+  }
+  .result-buttons{
+    display:flex;
+    gap:12px;
+    margin-top:10px;
+    width:100%;
+  }
+  .result-buttons button{flex:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>数字つなぎトレーニング</h1>
+  </header>
+
+  <!-- 設定画面 -->
+  <section id="settingsScreen" class="screen">
+    <div class="setting-card">
+      <div class="setting-group">
+        <label class="group-title">刺激数（数字の個数）</label>
+        <div class="choice-buttons" id="countChoices">
+          <button class="choice-btn" data-value="10">10</button>
+          <button class="choice-btn selected" data-value="20">20</button>
+          <button class="choice-btn" data-value="30">30</button>
+          <button class="choice-btn" data-value="50">50</button>
+          <button class="choice-btn" data-value="100">100</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-title">タップする順序</label>
+        <div class="choice-buttons" id="orderChoices">
+          <button class="choice-btn selected" data-value="sequential">数字順</button>
+          <button class="choice-btn" data-value="random">ランダム順</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-title">タップ後の表示</label>
+        <div class="choice-buttons" id="fadeChoices">
+          <button class="choice-btn selected" data-value="on">薄くなる</button>
+          <button class="choice-btn" data-value="off">薄くならない</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="group-title">ヒント</label>
+        <div class="choice-buttons" id="hintChoices">
+          <button class="choice-btn" data-value="off">なし</button>
+          <button class="choice-btn selected" data-value="on">あり</button>
+        </div>
+      </div>
+
+      <div class="setting-group" id="hintDelayGroup">
+        <label class="group-title">ヒントが出るまでの時間</label>
+        <div class="choice-buttons" id="hintDelayChoices">
+          <button class="choice-btn" data-value="3">3秒</button>
+          <button class="choice-btn selected" data-value="5">5秒</button>
+          <button class="choice-btn" data-value="8">8秒</button>
+          <button class="choice-btn" data-value="10">10秒</button>
+        </div>
+      </div>
+
+      <button id="startBtn" class="btn-primary">開始する</button>
+    </div>
+  </section>
+
+  <!-- ゲーム画面 -->
+  <section id="gameScreen" class="screen hidden">
+    <div class="game-hud">
+      <div class="hud-item">経過時間<span id="timerDisplay">00:00.0</span></div>
+      <div class="hud-item hud-item-next">次に選ぶ数字<span id="nextNumber">1</span></div>
+      <button id="abortBtn" class="btn-secondary small">設定に戻る</button>
+    </div>
+    <div id="playArea" class="play-area"></div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="resultScreen" class="screen hidden">
+    <div class="result-card">
+      <h2>完了しました</h2>
+      <div class="result-time" id="resultTime">00:00.0</div>
+      <p class="result-sub" id="resultMistakes"></p>
+      <div class="result-buttons">
+        <button id="retryBtn" class="btn-primary">もう一度</button>
+        <button id="backToSettingsBtn" class="btn-secondary">設定を変更</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = {
+    count: 20,
+    hint: true,
+    hintDelay: 5000,
+    orderMode: 'sequential',
+    fadeOnTap: true,
+    total: 20,
+    sequence: [],
+    step: 0,
+    mistakes: 0,
+    startTime: 0,
+    timerInterval: null,
+    hintTimeout: null
+  };
+
+  var settingsScreen = document.getElementById('settingsScreen');
+  var gameScreen = document.getElementById('gameScreen');
+  var resultScreen = document.getElementById('resultScreen');
+  var playArea = document.getElementById('playArea');
+  var nextNumberEl = document.getElementById('nextNumber');
+  var timerDisplayEl = document.getElementById('timerDisplay');
+  var resultTimeEl = document.getElementById('resultTime');
+  var resultMistakesEl = document.getElementById('resultMistakes');
+  var hintDelayGroup = document.getElementById('hintDelayGroup');
+
+  function setupChoiceGroup(containerId, onSelect){
+    var container = document.getElementById(containerId);
+    var buttons = container.querySelectorAll('.choice-btn');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        buttons.forEach(function(b){ b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        onSelect(btn.getAttribute('data-value'));
+      });
+    });
+  }
+
+  setupChoiceGroup('countChoices', function(val){
+    state.count = parseInt(val, 10);
+  });
+
+  setupChoiceGroup('hintChoices', function(val){
+    state.hint = (val === 'on');
+    hintDelayGroup.classList.toggle('hidden', !state.hint);
+  });
+
+  setupChoiceGroup('hintDelayChoices', function(val){
+    state.hintDelay = parseInt(val, 10) * 1000;
+  });
+
+  setupChoiceGroup('orderChoices', function(val){
+    state.orderMode = val;
+  });
+
+  setupChoiceGroup('fadeChoices', function(val){
+    state.fadeOnTap = (val === 'on');
+  });
+
+  document.getElementById('startBtn').addEventListener('click', function(){
+    showScreen(gameScreen);
+    requestAnimationFrame(function(){
+      initGame();
+    });
+  });
+
+  document.getElementById('abortBtn').addEventListener('click', function(){
+    stopTimer();
+    clearHintTimeout();
+    showScreen(settingsScreen);
+  });
+
+  document.getElementById('retryBtn').addEventListener('click', function(){
+    showScreen(gameScreen);
+    requestAnimationFrame(function(){
+      initGame();
+    });
+  });
+
+  document.getElementById('backToSettingsBtn').addEventListener('click', function(){
+    showScreen(settingsScreen);
+  });
+
+  function showScreen(screen){
+    [settingsScreen, gameScreen, resultScreen].forEach(function(s){
+      s.classList.add('hidden');
+    });
+    screen.classList.remove('hidden');
+  }
+
+  function initGame(){
+    state.total = state.count;
+    state.mistakes = 0;
+
+    state.sequence = [];
+    for (var i = 1; i <= state.total; i++) state.sequence.push(i);
+    if (state.orderMode === 'random') shuffleArray(state.sequence);
+    state.step = 0;
+
+    playArea.innerHTML = '';
+    nextNumberEl.textContent = String(currentTarget());
+    timerDisplayEl.textContent = '00:00.0';
+
+    placeNumbers(state.total);
+
+    state.startTime = Date.now();
+    stopTimer();
+    state.timerInterval = setInterval(updateTimerDisplay, 100);
+
+    scheduleHint();
+  }
+
+  function placeNumbers(n){
+    var rect = playArea.getBoundingClientRect();
+    var W = rect.width;
+    var H = rect.height;
+
+    var cols = Math.max(1, Math.ceil(Math.sqrt(n * (W / H))));
+    var rows = Math.max(1, Math.ceil(n / cols));
+
+    var cellW = W / cols;
+    var cellH = H / rows;
+    var fitDiameter = Math.min(cellW, cellH) * 0.62;
+    var diameter;
+    if (n <= 30) {
+      // 10・20・30はサイズを変えない（通常サイズ固定。極端に狭い場合のみ安全のため縮小）
+      diameter = Math.min(56, fitDiameter);
+      diameter = Math.max(diameter, 30);
+    } else {
+      // 50・100は数字が重ならないよう自動的にサイズを縮小
+      diameter = Math.max(18, Math.min(56, fitDiameter));
+    }
+
+    var cellIndices = [];
+    for (var i = 0; i < cols * rows; i++) cellIndices.push(i);
+    shuffleArray(cellIndices);
+    cellIndices = cellIndices.slice(0, n);
+
+    var margin = 6;
+    var jitterX = Math.max(0, cellW / 2 - diameter / 2 - margin);
+    var jitterY = Math.max(0, cellH / 2 - diameter / 2 - margin);
+
+    for (var num = 1; num <= n; num++) {
+      var idx = cellIndices[num - 1];
+      var col = idx % cols;
+      var row = Math.floor(idx / cols);
+      var cx = col * cellW + cellW / 2 + (Math.random() * 2 - 1) * jitterX;
+      var cy = row * cellH + cellH / 2 + (Math.random() * 2 - 1) * jitterY;
+
+      var left = Math.min(Math.max(cx - diameter / 2, margin), W - diameter - margin);
+      var top = Math.min(Math.max(cy - diameter / 2, margin), H - diameter - margin);
+
+      var el = document.createElement('button');
+      el.className = 'circle';
+      el.type = 'button';
+      el.textContent = String(num);
+      el.setAttribute('data-num', String(num));
+      el.style.width = diameter + 'px';
+      el.style.height = diameter + 'px';
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+      el.style.fontSize = (diameter * 0.4) + 'px';
+      el.addEventListener('click', (function(num, el){
+        return function(){ onCircleClick(num, el); };
+      })(num, el));
+
+      playArea.appendChild(el);
+    }
+  }
+
+  function currentTarget(){
+    return state.sequence[state.step];
+  }
+
+  function onCircleClick(num, el){
+    if (el.classList.contains('done') || el.classList.contains('done-marked')) return;
+
+    if (num === currentTarget()) {
+      el.classList.remove('hint-blink');
+      el.classList.add(state.fadeOnTap ? 'done' : 'done-marked');
+      el.disabled = true;
+      clearHintTimeout();
+      state.step++;
+
+      if (state.step >= state.total) {
+        nextNumberEl.textContent = '-';
+        finishGame();
+      } else {
+        nextNumberEl.textContent = String(currentTarget());
+        scheduleHint();
+      }
+    } else {
+      state.mistakes++;
+      el.classList.remove('wrong');
+      void el.offsetWidth;
+      el.classList.add('wrong');
+      setTimeout(function(){ el.classList.remove('wrong'); }, 300);
+    }
+  }
+
+  function scheduleHint(){
+    clearHintTimeout();
+    if (!state.hint) return;
+    state.hintTimeout = setTimeout(function(){
+      var targetEl = playArea.querySelector('.circle[data-num="' + currentTarget() + '"]');
+      if (targetEl) targetEl.classList.add('hint-blink');
+    }, state.hintDelay);
+  }
+
+  function clearHintTimeout(){
+    if (state.hintTimeout) {
+      clearTimeout(state.hintTimeout);
+      state.hintTimeout = null;
+    }
+  }
+
+  function stopTimer(){
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+  }
+
+  function updateTimerDisplay(){
+    var elapsed = Date.now() - state.startTime;
+    timerDisplayEl.textContent = formatTime(elapsed);
+  }
+
+  function formatTime(ms){
+    var totalDeci = Math.floor(ms / 100);
+    var minutes = Math.floor(totalDeci / 600);
+    var seconds = Math.floor((totalDeci % 600) / 10);
+    var deci = totalDeci % 10;
+    return pad2(minutes) + ':' + pad2(seconds) + '.' + deci;
+  }
+
+  function pad2(n){
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function finishGame(){
+    stopTimer();
+    clearHintTimeout();
+    var elapsed = Date.now() - state.startTime;
+    resultTimeEl.textContent = formatTime(elapsed);
+    resultMistakesEl.textContent = '誤クリック回数：' + state.mistakes + '回';
+    showScreen(resultScreen);
+  }
+
+  function shuffleArray(arr){
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
+  }
+})();
+</script>
+</body>
+</html>
