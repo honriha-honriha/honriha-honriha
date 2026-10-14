@@ -1,0 +1,289 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>トランプ ワンバック課題</title>
+<style>
+:root{--felt:#14505a;--felt2:#0d3c44;--panel:#f7f5ee;--ink:#27323a;--gold:#c9a227;--red:#c0392b;--ok:#2e8b57;--ng:#c0392b;--mute:#6b7780;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--felt:#0f3d45;--felt2:#09292f;--panel:#1f2a30;--ink:#eef0ea;--mute:#a3afb6}}
+:root[data-theme="dark"]{--felt:#0f3d45;--felt2:#09292f;--panel:#1f2a30;--ink:#eef0ea;--mute:#a3afb6}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 30%,var(--felt),var(--felt2));color:var(--ink);font-family:"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:560px;padding:20px 16px 32px;display:flex;flex-direction:column;align-items:center}
+.panel{background:var(--panel);border-radius:18px;padding:24px 20px;width:100%;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+h1{font-size:1.5rem;margin:0 0 6px;text-align:center}
+.sub{color:var(--mute);text-align:center;margin:0 0 20px;font-size:.95rem;line-height:1.6}
+label{display:block;font-weight:700;margin:16px 0 6px}
+select{width:100%;font-size:1.1rem;padding:12px;border-radius:10px;border:2px solid var(--mute);background:var(--panel);color:var(--ink)}
+.btn{font-family:inherit;font-weight:700;border:0;border-radius:16px;cursor:pointer;color:#fff;font-size:1.5rem;min-height:72px;width:100%}
+.btn:focus-visible,select:focus-visible{outline:4px solid var(--gold);outline-offset:2px}
+.start{background:var(--gold);color:#27323a;margin-top:24px}
+.same{background:var(--ok)}.diff{background:#41606b}
+.hidden{display:none!important}
+#game{width:100%;flex-direction:column;align-items:center;gap:16px}
+#game:not(.hidden){display:flex}
+.top{width:100%;display:flex;justify-content:space-between;color:#f3efe0;font-weight:700}
+.stage{height:min(52vh,380px);display:flex;align-items:center;justify-content:center}
+.card{position:relative;height:100%;aspect-ratio:5/7;background:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.35);border:1px solid #ccc;color:#1a1a1a;transition:box-shadow .15s}
+.card.red{color:var(--red)}
+.card.fb-ok{box-shadow:0 0 0 8px var(--ok)}.card.fb-ng{box-shadow:0 0 0 8px var(--ng)}
+.corner{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1;font-weight:700;font-size:clamp(2.2rem,10vw,3.6rem)}
+.corner.tl{top:6%;left:7%}.corner.br{bottom:6%;right:7%;transform:rotate(180deg)}
+.corner small{font-size:.75em;margin-top:2px}
+.mini .corner{font-size:1.9rem}.mini .pip{font-size:1.5rem}.mini .pip.big{font-size:3rem}
+.pip{position:absolute;transform:translate(-50%,-50%);font-size:clamp(1.6rem,7vw,2.6rem);line-height:1}
+.pip.flip{transform:translate(-50%,-50%) rotate(180deg)}
+.pip.big{font-size:clamp(3rem,15vw,5rem)}
+.back{background:repeating-linear-gradient(45deg,#1d5f6b 0 8px,#164b55 8px 16px);border:8px solid #fff}
+.btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btns .btn{font-size:1.3rem}.c-both{background:var(--ok)}.c-suit{background:#a8453a}.c-num{background:#2f6f8f}.c-none{background:#41606b}
+.hint{color:#f3efe0;min-height:1.4em;text-align:center;font-size:1rem}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.res div{background:rgba(127,127,127,.12);border-radius:12px;padding:12px;text-align:center}
+.res b{display:block;font-size:1.6rem}
+.res span{font-size:.85rem;color:var(--mute)}
+.pair{display:flex;gap:14px;justify-content:center;margin:12px 0}
+.pair figure{margin:0;text-align:center;font-weight:700}
+.pair figcaption{margin-top:6px;font-size:.95rem}
+.mini{height:200px;display:flex;justify-content:center}
+.mini .card{height:100%}
+.rvinfo{display:grid;gap:6px;font-size:1.05rem;text-align:center}
+.verdict{font-size:1.5rem;font-weight:800}.verdict.ok{color:var(--ok)}.verdict.ng{color:var(--ng)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;justify-content:center}
+.chip{min-width:52px;height:40px;border-radius:8px;border:0;color:#fff;font-weight:700;font-family:inherit;cursor:pointer}
+.chip.ok{background:var(--ok)}.chip.ng{background:var(--ng)}.chip.cur{outline:3px solid var(--gold);outline-offset:2px}
+.score{text-align:center;font-size:2.4rem;font-weight:800;margin:8px 0}
+.row2{display:grid;gap:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+ <section id="setup" class="panel">
+  <h1>トランプ ワンバック課題</h1>
+  <p class="sub">1枚ずつカードが出ます。<br>前に出たカードと比べて答えます。</p>
+  <label for="nb">何枚前と比べるか</label>
+  <select id="nb"><option value="1">ワンバック(ひとつ前)</option><option value="2">ツーバック(2枚前)</option></select>
+  <label for="rule">同じと判断する条件</label>
+  <select id="rule">
+   <option value="both">数字もマークも同じ</option>
+   <option value="num">数字だけ同じ(マークは無視)</option>
+   <option value="suit">マークだけ同じ(数字は無視)</option>
+   <option value="all">3つとも判断(完全一致・マーク一致・数字一致を選ぶ)</option>
+  </select>
+  <label for="count">カードの枚数</label>
+  <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select>
+  <label for="sec">1枚の表示時間</label>
+  <select id="sec"><option value="0">なし(答えるまで表示)</option><option value="0.5">0.5秒(とてもはやい)</option><option value="1">1秒(はやい)</option><option value="2">2秒</option><option value="3" selected>3秒</option><option value="4">4秒</option><option value="5">5秒(ゆっくり)</option></select>
+  <button class="btn start" id="startBtn">はじめる</button>
+ </section>
+
+ <section id="game" class="hidden">
+  <div class="top"><span id="prog"></span><span id="ruleLbl"></span></div>
+  <div class="stage"><div class="card back" id="card"></div></div>
+  <div class="hint" id="hint"></div>
+  <div class="btns" id="btns"></div>
+  <button class="btn start hidden" id="nextBtn" style="margin-top:0">つぎへ</button>
+ </section>
+
+ <section id="result" class="panel hidden">
+  <h1>おつかれさまでした</h1>
+  <div class="score" id="score"></div>
+  <p class="sub" id="rt" style="margin:0"></p>
+  <div class="res" id="res"></div>
+  <div class="row2">
+   <button class="btn start" id="openRv" style="margin-top:0">1問ずつ確認する</button>
+   <button class="btn same" id="again">もう一度</button>
+   <button class="btn diff" id="home">設定にもどる</button>
+  </div>
+ </section>
+
+ <section id="review" class="panel hidden">
+  <h1 id="rvTitle" style="font-size:1.2rem"></h1>
+  <div class="pair">
+   <figure><div class="mini"><div class="card" id="rvRef"></div></div><figcaption id="rvRefCap"></figcaption></figure>
+   <figure><div class="mini"><div class="card" id="rvCur"></div></div><figcaption id="rvCurCap"></figcaption></figure>
+  </div>
+  <div class="rvinfo" id="rvInfo"></div>
+  <div class="btns" style="margin-top:14px">
+   <button class="btn diff" id="rvPrev">前の問題</button>
+   <button class="btn diff" id="rvNext">次の問題</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <button class="btn start" id="rvBack" style="margin-top:18px">結果にもどる</button>
+ </section>
+</main>
+
+<script>
+const SUITS=[{s:"\u2660\uFE0E",r:false,n:"スペード"},{s:"\u2665\uFE0E",r:true,n:"ハート"},{s:"\u2666\uFE0E",r:true,n:"ダイヤ"},{s:"\u2663\uFE0E",r:false,n:"クラブ"}];
+const L=15,C=50,R=85; // not used directly; layouts below in %
+const X={l:30,c:50,r:70};
+const LAY={
+1:[[50,50]],
+2:[[50,16],[50,84]],
+3:[[50,16],[50,50],[50,84]],
+4:[[30,16],[70,16],[30,84],[70,84]],
+5:[[30,16],[70,16],[50,50],[30,84],[70,84]],
+6:[[30,16],[70,16],[30,50],[70,50],[30,84],[70,84]],
+7:[[30,16],[70,16],[50,33],[30,50],[70,50],[30,84],[70,84]],
+8:[[30,16],[70,16],[50,33],[30,50],[70,50],[50,67],[30,84],[70,84]],
+9:[[30,16],[70,16],[30,38],[70,38],[50,50],[30,62],[70,62],[30,84],[70,84]],
+10:[[30,16],[70,16],[50,27],[30,38],[70,38],[30,62],[70,62],[50,73],[30,84],[70,84]]
+};
+const $=id=>document.getElementById(id);
+const RULE_NAME={both:"数字もマークも",num:"数字だけ",suit:"マークだけ"};
+let cfg,seq,idx,ans,timers=[],shownAt=null,rv=0;
+
+function renderCard(c,el){
+  el=el||$("card"); const su=SUITS[c.suit];
+  el.className="card"+(su.r?" red":"");
+  let h=`<div class="corner tl">${c.num}<small>${su.s}</small></div><div class="corner br">${c.num}<small>${su.s}</small></div>`;
+  LAY[c.num].forEach(([x,y])=>{h+=`<span class="pip${y>50?" flip":""}${c.num===1?" big":""}" style="left:${x}%;top:${y}%">${su.s}</span>`});
+  el.innerHTML=h; el.setAttribute("aria-label",su.n+"の"+c.num);
+}
+function blankCard(){const el=$("card");el.className="card back";el.innerHTML="";el.removeAttribute("aria-label")}
+
+function same(a,b,rule){
+  if(rule==="both")return a.num===b.num&&a.suit===b.suit;
+  if(rule==="num")return a.num===b.num;
+  return a.suit===b.suit;
+}
+function cat(a,b){
+  const n=a.num===b.num,t=a.suit===b.suit;
+  return n&&t?"both":t?"suit":n?"num":"none";
+}
+function rnd(n){return Math.floor(Math.random()*n)}
+function other(p,keepNum,keepSuit){
+  let c;
+  do{c={num:keepNum?p.num:1+rnd(10),suit:keepSuit?p.suit:rnd(4)}}while((!keepNum&&c.num===p.num)||(!keepSuit&&c.suit===p.suit));
+  return c;
+}
+function makeSeq(n,rule,k){
+  const s=[];
+  for(let i=0;i<k&&i<n;i++)s.push({num:1+rnd(10),suit:rnd(4)});
+  while(s.length<n){
+    const p=s[s.length-k],r=Math.random();let c;
+    if(rule==="all"){
+      if(r<.2)c={...p};else if(r<.4)c=other(p,false,true);else if(r<.6)c=other(p,true,false);else c=other(p,false,false);
+    }else if(r<.35){
+      if(rule==="both")c={...p};else if(rule==="num")c={num:p.num,suit:rnd(4)};else c={num:1+rnd(10),suit:p.suit};
+    }else{
+      do{c={num:1+rnd(10),suit:rnd(4)}}while(same(p,c,rule));
+    }
+    s.push(c);
+  }
+  return s;
+}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+function show(id){["setup","game","result","review"].forEach(x=>$(x).classList.toggle("hidden",x!==id))}
+const OPTS={
+ two:[["same","同じ","same"],["diff","ちがう","diff"]],
+ all:[["both","完全一致","c-both"],["suit","マークだけ一致","c-suit"],["num","数字だけ一致","c-num"],["none","どれもちがう","c-none"]]
+};
+function start(){
+  cfg={rule:$("rule").value,n:+$("count").value,ms:+$("sec").value*1000,k:+$("nb").value};
+  cfg.gap=cfg.ms?Math.min(350,cfg.ms*0.25):350;
+  seq=makeSeq(cfg.n,cfg.rule,cfg.k);
+  ans=seq.map((c,i)=>{
+    if(i<cfg.k)return{target:null,resp:null};
+    const p=seq[i-cfg.k];
+    return{target:cfg.rule==="all"?cat(p,c):(same(p,c,cfg.rule)?"same":"diff"),resp:null};
+  });
+  idx=-1;
+  $("ruleLbl").textContent=(cfg.k===1?"ワンバック":"ツーバック")+" / "+(cfg.rule==="all"?"3つとも判断":RULE_NAME[cfg.rule]);
+  const o=cfg.rule==="all"?OPTS.all:OPTS.two;
+  const bx=$("btns");bx.innerHTML="";
+  o.forEach(([key,label,cls])=>{
+    const b=document.createElement("button");b.className="btn "+cls;b.textContent=label;b.dataset.k=key;
+    b.onclick=()=>answer(key);bx.appendChild(b);
+  });
+  show("game"); next();
+}
+function setBtns(on){document.querySelectorAll("#btns .btn").forEach(b=>{b.disabled=!on;b.style.opacity=on?1:.45})}
+function next(){
+  clearTimers(); idx++; shownAt=null;
+  $("nextBtn").classList.add("hidden");$("btns").classList.remove("hidden");
+  if(idx>=cfg.n){finish();return}
+  $("prog").textContent=(idx+1)+" / "+cfg.n;
+  blankCard(); setBtns(false);
+  $("hint").textContent=idx<cfg.k?(cfg.k===1?"最初のカードです。よく見ておぼえましょう":"最初の2枚はおぼえるだけです"):"";
+  timers.push(setTimeout(()=>{
+    renderCard(seq[idx]); shownAt=performance.now();
+    if(!cfg.ms&&idx<cfg.k){$("btns").classList.add("hidden");$("nextBtn").classList.remove("hidden")}
+    if(idx>=cfg.k){setBtns(true);$("hint").textContent=(cfg.k===1?"ひとつ前":"2枚前")+"と比べて答えましょう"}
+  },cfg.gap));
+  if(cfg.ms)timers.push(setTimeout(next,cfg.ms));
+}
+function answer(key){
+  if(idx<cfg.k||shownAt===null||ans[idx].resp!==null)return;
+  ans[idx].resp=key; ans[idx].rt=performance.now()-shownAt; shownAt=null;
+  next();
+}
+function finish(){
+  clearTimers();
+  const t=ans.slice(cfg.k);
+  const correct=t.filter(a=>a.resp===a.target).length;
+  const none=t.filter(a=>a.resp===null).length;
+  $("score").textContent=correct+" / "+t.length+"問 正解("+Math.round(correct/t.length*100)+"%)";
+  let h="";
+  if(cfg.rule==="all"){
+    OPTS.all.forEach(([key,label])=>{
+      const g=t.filter(a=>a.target===key);
+      h+=`<div><b>${g.filter(a=>a.resp===key).length} / ${g.length}</b><span>${label}</span></div>`;
+    });
+    h+=`<div><b>${none}</b><span>答えなかった</span></div>`;
+  }else{
+    const g=k=>t.filter(a=>a.target===k);
+    h=`<div><b>${g("same").filter(a=>a.resp==="same").length} / ${g("same").length}</b><span>「同じ」を正しく選べた</span></div>`+
+      `<div><b>${g("diff").filter(a=>a.resp==="diff").length} / ${g("diff").length}</b><span>「ちがう」を正しく選べた</span></div>`+
+      `<div><b>${t.length-correct-none}</b><span>まちがえた</span></div>`+
+      `<div><b>${none}</b><span>答えなかった</span></div>`;
+  }
+  $("res").innerHTML=h;
+  const rts=t.filter(a=>a.rt!=null).map(a=>a.rt);
+  $("rt").textContent=rts.length?"平均反応時間 "+(rts.reduce((x,y)=>x+y,0)/rts.length/1000).toFixed(2)+"秒(答えた問題のみ)":"";
+  const ch=$("chips");ch.innerHTML="";
+  for(let i=cfg.k;i<cfg.n;i++){
+    const b=document.createElement("button");b.className="chip "+(ans[i].resp===ans[i].target?"ok":"ng");
+    b.textContent=(i-cfg.k+1)+(ans[i].resp===ans[i].target?"○":"×");b.onclick=()=>showReview(i);ch.appendChild(b);
+  }
+  show("result");
+}
+const LBL={same:"同じ",diff:"ちがう",both:"完全一致",suit:"マークだけ一致",num:"数字だけ一致",none:"どれもちがう"};
+function showReview(i){
+  rv=i;const a=ans[i],ok=a.resp===a.target;
+  $("rvTitle").textContent=(i-cfg.k+1)+"問目 / "+(cfg.n-cfg.k)+"問";
+  renderCard(seq[i-cfg.k],$("rvRef"));renderCard(seq[i],$("rvCur"));
+  $("rvRefCap").textContent=cfg.k===1?"ひとつ前":"2枚前";
+  $("rvCurCap").textContent="このカード";
+  $("rvInfo").innerHTML=`<div class="verdict ${ok?"ok":"ng"}">${ok?"○ 正解":a.resp===null?"× 答えなし":"× 不正解"}</div>`+
+   `<div>正解:<b>${LBL[a.target]}</b></div><div>あなたの答え:<b>${a.resp===null?"答えなし":LBL[a.resp]}</b></div>`+
+   (a.rt!=null?`<div>反応時間:${(a.rt/1000).toFixed(2)}秒</div>`:"");
+  $("rvPrev").disabled=i<=cfg.k;$("rvNext").disabled=i>=cfg.n-1;
+  $("rvPrev").style.opacity=i<=cfg.k?.45:1;$("rvNext").style.opacity=i>=cfg.n-1?.45:1;
+  [...$("chips").children].forEach((c,j)=>c.classList.toggle("cur",j===i-cfg.k));
+  show("review");
+}
+$("openRv").onclick=()=>showReview(cfg.k);
+$("rvPrev").onclick=()=>{if(rv>cfg.k)showReview(rv-1)};
+$("rvNext").onclick=()=>{if(rv<cfg.n-1)showReview(rv+1)};
+$("rvBack").onclick=()=>show("result");
+$("startBtn").onclick=start;
+$("nextBtn").onclick=()=>{if(shownAt!==null)next()};
+$("again").onclick=start;
+$("home").onclick=()=>{clearTimers();show("setup")};
+document.addEventListener("keydown",e=>{
+  if($("game").classList.contains("hidden"))return;
+  const bs=[...document.querySelectorAll("#btns .btn")];
+  if(cfg.rule==="all"){const i=+e.key-1;if(bs[i])answer(bs[i].dataset.k)}
+  else{if(e.key==="ArrowLeft")answer("same");if(e.key==="ArrowRight")answer("diff")}
+});
+</script>
+</body>
+</html>
+
+</body></html>
