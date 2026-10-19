@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ドリップ・タイミング</title>
+<style>
+:root{
+  --bg:#fbf5ea; --panel:#ffffff; --ink:#3b2a1f; --sub:#6b5646; --accent:#8a4b24;
+  --ok:#2e7d32; --warn:#c62828; --coffee:#5b3a24; --line:#d32f2f; --soft:#f1e4d0; --edge:#c9b49a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic","Meiryo",sans-serif;}
+body{min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:1000px;padding:16px}
+h1{margin:8px 0 4px;font-size:28px;color:var(--accent)}
+.sub{color:var(--sub);margin:0 0 16px;line-height:1.7}
+.card{background:var(--panel);border:2px solid var(--edge);border-radius:16px;padding:18px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:18px}
+button{font-family:inherit;font-size:18px;border-radius:12px;border:2px solid var(--accent);background:#fff;color:var(--accent);padding:10px 16px;cursor:pointer;min-height:48px}
+button:hover:not(:disabled){background:var(--soft)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible{outline:4px solid #1e66d0;outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg button.sel{background:var(--accent);color:#fff}
+.big{font-size:22px;padding:14px 28px;background:var(--accent);color:#fff}
+.big:hover:not(:disabled){background:#6f3a19}
+label{font-size:17px}
+select,input[type=number]{font-size:18px;padding:8px;border-radius:8px;border:2px solid var(--edge);min-height:44px;font-family:inherit}
+ul.rules{margin:0;padding-left:1.3em;line-height:1.9;font-size:17px}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.35);flex:0 0 auto}
+
+/* game */
+.hud{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hud .stat{background:var(--panel);border:2px solid var(--edge);border-radius:12px;padding:8px 14px;font-size:18px}
+.hud b{font-size:22px}
+.hud button{font-size:16px;min-height:42px;padding:6px 14px}
+.sectitle{font-size:16px;color:var(--sub);margin:8px 0 6px}
+#orders{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;min-height:104px}
+.ticket{background:#fffdf7;border:2px solid var(--accent);border-radius:12px;padding:8px 10px;min-width:200px;flex:0 0 auto}
+.ticket .tno{font-size:14px;color:var(--sub);margin-bottom:2px}
+.drow{display:flex;align-items:center;gap:6px;margin:4px 0}
+.drow .dn{font-size:15px;font-weight:700;flex:1}
+.drow.done{opacity:.4;text-decoration:line-through}
+.chip{display:inline-block;min-width:44px;text-align:center;border-radius:999px;padding:2px 10px;font-size:18px;font-weight:700;border:2px solid var(--coffee);color:var(--coffee);background:#fff}
+.chip.L{background:var(--coffee);color:#fff}
+.bar{height:8px;background:#e6dccd;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:100%;background:var(--ok)}
+.empty{color:var(--sub);padding:28px 8px}
+
+#stations{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.station{background:var(--panel);border:2px solid var(--edge);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.station .st-title{font-weight:700;color:var(--sub)}
+.cupbox{position:relative;width:100%;height:300px;display:flex;justify-content:center;align-items:flex-end;background:linear-gradient(#f7efe2,#fff);border-radius:10px}
+.spout{position:absolute;top:0;left:50%;transform:translateX(-50%);width:44px;height:26px;background:#7b7b7b;border-radius:0 0 10px 10px}
+.stream{position:absolute;top:26px;left:50%;transform:translateX(-50%);width:8px;background:var(--coffee);display:none;border-radius:4px}
+.placeholder{position:absolute;bottom:0;width:100px;height:100px;border:3px dashed var(--edge);border-radius:0 0 18px 18px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--sub);font-size:14px;padding:4px}
+.cup{position:relative;display:none;border:4px solid #555;border-top:none;border-radius:0 0 22px 22px;background:#fffdfa;overflow:visible}
+.cup.S{width:84px}.cup.L{width:104px}
+.cup .fill{position:absolute;left:0;right:0;bottom:0;background:var(--coffee);border-radius:0 0 16px 16px}
+.cup .brimzone{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(45deg,rgba(211,47,47,.18),rgba(211,47,47,.18) 6px,rgba(211,47,47,.05) 6px,rgba(211,47,47,.05) 12px)}
+.cup .mark{position:absolute;left:-10px;right:-10px;border-top:3px dashed var(--line)}
+.cup .mark span{position:absolute;left:100%;top:-12px;padding-left:4px;font-size:13px;font-weight:700;color:var(--line);white-space:nowrap}
+.cup.spill{animation:shake .3s 2}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.cur{min-height:24px;font-weight:700;font-size:15px;text-align:center}
+.types{display:flex;flex-direction:column;gap:6px;width:100%}
+.types button{font-size:15px;min-height:40px;padding:6px 8px;display:flex;align-items:center;gap:8px;text-align:left;line-height:1.2}
+.types button.sel{background:var(--accent);color:#fff}
+.sizes{display:flex;gap:8px;width:100%}
+.sizes button{flex:1;padding:8px 0}
+.sizes button.sel{background:var(--accent);color:#fff}
+.act{width:100%;font-size:20px;font-weight:700;min-height:62px}
+.act.go{background:var(--ok);border-color:var(--ok);color:#fff}
+.act.go:hover:not(:disabled){background:#236427}
+.act.stop{background:var(--warn);border-color:var(--warn);color:#fff}
+.act.stop:hover:not(:disabled){background:#a51f1f}
+.msg{min-height:26px;font-weight:700;font-size:17px;text-align:center}
+.msg.good{color:var(--ok)}.msg.bad{color:var(--warn)}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:17px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:.95}
+#pause{position:fixed;inset:0;background:rgba(251,245,234,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:26px;z-index:5}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.res-grid div{background:var(--soft);border-radius:12px;padding:10px;text-align:center}
+.res-grid b{display:block;font-size:26px}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){.cup.spill{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- スタート画面 -->
+<section id="start">
+  <h1>ドリップ・タイミング</h1>
+  <p class="sub">注文に合わせて飲み物を淹れる、タイミングの脳トレです。</p>
+
+  <div class="card">
+    <h2>あそびかた</h2>
+    <ul class="rules">
+      <li>画面上部に注文が届きます。1回の注文に1〜2杯入っていて、<b>飲み物の種類</b>と<b>サイズ(小・大)</b>が書かれています。</li>
+      <li>マシンで<b>種類とサイズ</b>を選び、<b>開始</b>を押すと飲み物が出ます。</li>
+      <li><b>赤い線(適量)を超えてから、ふちからあふれる前</b>に<b>停止</b>を押します。</li>
+      <li>大は小の約2倍の時間がかかります。足りなくても、あふれてもやり直しです。</li>
+      <li>注文を待たせすぎると、時間切れになります。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>むずかしさ</h2>
+    <div class="row seg" id="diffBtns">
+      <button data-d="easy">かんたん(マシン2台)</button>
+      <button data-d="normal" class="sel">ふつう(マシン3台)</button>
+      <button data-d="hard">むずかしい(マシン4台)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>せってい</h2>
+    <div class="row" style="gap:20px">
+      <label>注文の数
+        <select id="count">
+          <option>5</option><option selected>10</option><option>15</option>
+          <option>20</option><option>25</option><option>30</option>
+        </select>
+      </label>
+      <label>注文が届く間隔(秒)
+        <input type="number" id="interval" min="2" max="30" step="1" value="9">
+      </label>
+      <label>メニューの数
+        <select id="kinds">
+          <option value="2" selected>2種類(コーヒー 小・大)</option>
+          <option value="4">4種類(+キャラメルマキアート)</option>
+          <option value="6">6種類(+ホットチョコ)</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="sound" checked> 音を鳴らす</label>
+    </div>
+  </div>
+
+  <button class="big" id="startBtn">はじめる</button>
+</section>
+
+<!-- ゲーム画面 -->
+<section id="game" class="hidden">
+  <div class="hud">
+    <div class="stat">得点 <b id="score">0</b></div>
+    <div class="stat">注文 <b id="prog">0</b> / <span id="total"></span></div>
+    <div class="stat">次の注文まで <b id="next">-</b></div>
+    <div class="row">
+      <button id="pauseBtn">一時停止</button>
+      <button id="quitBtn">やめる</button>
+    </div>
+  </div>
+  <div class="sectitle">注文(古い順に対応されます)</div>
+  <div id="orders"></div>
+  <div class="sectitle">マシン <span style="font-size:13px">(キーボード:数字キー1〜4で開始/停止)</span></div>
+  <div id="stations"></div>
+</section>
+
+<!-- 結果画面 -->
+<section id="result" class="hidden">
+  <h1>おつかれさまでした</h1>
+  <div class="card">
+    <p class="sub" id="comment" style="font-size:20px;color:var(--ink)"></p>
+    <div class="res-grid" id="resGrid"></div>
+  </div>
+  <div class="row">
+    <button class="big" id="againBtn">もう一度</button>
+    <button id="toStartBtn">せっていに戻る</button>
+  </div>
+</section>
+
+</div>
+<div id="toast"></div>
+<div id="pause"><div>一時停止中</div><button class="big" id="resumeBtn">再開する</button></div>
+
+<script>
+const DIFF={
+  easy:  {st:2,margin:2.0,interval:12},   // margin: 適量ラインからふちまでの余裕(秒)
+  normal:{st:3,margin:1.4,interval:9},
+  hard:  {st:4,margin:1.0,interval:7}
+};
+const T={S:4.0,L:8.0};      // 適量ラインに届くまでの秒数(大は小の2倍)
+const PX=26;                // 1秒あたりのピクセル数
+const MIN_INTERVAL=2, MAX_INTERVAL=30;
+const TYPES={
+  C:{name:'コーヒー',color:'#4b2e1c',fill:'#4b2e1c'},
+  M:{name:'キャラメルマキアート',color:'#c98a3d',
+     fill:'linear-gradient(to top,#5a3620 0 38%,#d19a52 38% 72%,#f6e7cc 72% 100%)'},
+  H:{name:'ホットチョコ',color:'#8e3f2f',
+     fill:'linear-gradient(to top,#8e3f2f 0 88%,#fdf1dc 88% 100%)'}
+};
+const MENU={2:['C'],4:['C','M'],6:['C','M','H']};   // 2種類=1銘柄×2サイズ、4種類=2銘柄、6種類=3銘柄
+const $=s=>document.querySelector(s);
+let sel={diff:'normal',count:10,interval:9,sound:true,kinds:2};
+let G=null,raf=0,audio=null,toastTimer=0;
+
+function beep(f,d=0.12,type='sine',v=0.07){
+  if(!sel.sound)return;
+  try{
+    audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+    const o=audio.createOscillator(),g=audio.createGain();
+    o.type=type;o.frequency.value=f;g.gain.value=v;
+    o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d);
+  }catch(e){}
+}
+function toast(t){
+  const el=$('#toast');el.textContent=t;el.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1400);
+}
+function show(id){['start','game','result'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id));}
+const szName=z=>z==='S'?'小':'大';
+
+/* ---------- スタート画面 ---------- */
+document.querySelectorAll('#diffBtns button').forEach(b=>{
+  b.onclick=()=>{
+    sel.diff=b.dataset.d;
+    document.querySelectorAll('#diffBtns button').forEach(x=>x.classList.toggle('sel',x===b));
+    $('#interval').value=DIFF[sel.diff].interval;
+  };
+});
+$('#startBtn').onclick=startGame;
+$('#againBtn').onclick=startGame;
+$('#toStartBtn').onclick=()=>show('start');
+
+/* ---------- ゲーム ---------- */
+function startGame(){
+  sel.count=+$('#count').value;
+  const iv=Math.round(+$('#interval').value);
+  sel.interval=Math.min(MAX_INTERVAL,Math.max(MIN_INTERVAL,iv||DIFF[sel.diff].interval));
+  $('#interval').value=sel.interval;
+  sel.kinds=+$('#kinds').value;
+  sel.sound=$('#sound').checked;
+  const d=DIFF[sel.diff];
+  G={d,menu:MENU[sel.kinds]||MENU[2],t:0,total:sel.count,interval:sel.interval,spawned:0,nextSpawn:1.0,
+     orders:[],stations:[],score:0,nextId:1,over:false,paused:false,last:performance.now(),
+     st:{perfect:0,ok:0,short:0,spill:0,wrong:0,done:0,missed:0}};
+  $('#total').textContent=G.total;
+  buildStations();
+  renderOrders();
+  updateHud();
+  show('game');
+  cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+
+function resetSel(s){
+  s.size=null;
+  s.type=G.menu.length===1?G.menu[0]:null;
+}
+function buildStations(){
+  const box=$('#stations');box.innerHTML='';
+  const multi=G.menu.length>1;
+  for(let i=0;i<G.d.st;i++){
+    const el=document.createElement('div');el.className='station';
+    el.innerHTML=`
+      <div class="st-title">マシン ${i+1}</div>
+      <div class="cupbox">
+        <div class="spout"></div><div class="stream"></div>
+        <div class="placeholder">${multi?'種類と<br>サイズを<br>えらんでね':'サイズを<br>えらんでね'}</div>
+        <div class="cup"><div class="brimzone"></div><div class="fill"></div><div class="mark"><span>適量</span></div></div>
+      </div>
+      <div class="cur"></div>
+      ${multi?`<div class="types">${G.menu.map(t=>`<button data-t="${t}"><i class="dot" style="background:${TYPES[t].fill}"></i>${TYPES[t].name}</button>`).join('')}</div>`:''}
+      <div class="sizes"><button data-s="S">小</button><button data-s="L">大</button></div>
+      <button class="act"></button>
+      <div class="msg"></div>`;
+    box.appendChild(el);
+    const s={i,el,multi,size:null,type:null,state:'idle',level:0,crossed:false,timer:0,
+      cup:el.querySelector('.cup'),fill:el.querySelector('.fill'),stream:el.querySelector('.stream'),
+      ph:el.querySelector('.placeholder'),act:el.querySelector('.act'),msg:el.querySelector('.msg'),
+      cur:el.querySelector('.cur'),
+      sizeBtns:[...el.querySelectorAll('.sizes button')],
+      typeBtns:[...el.querySelectorAll('.types button')]};
+    resetSel(s);
+    s.sizeBtns.forEach(b=>b.onclick=()=>selectSize(s,b.dataset.s));
+    s.typeBtns.forEach(b=>b.onclick=()=>selectType(s,b.dataset.t));
+    s.act.onclick=()=>stAct(s);
+    G.stations.push(s);
+    renderStation(s);
+  }
+}
+
+function setCup(s){
+  const m=G.d.margin;
+  s.cup.className='cup '+s.size;
+  s.cup.style.height=((T[s.size]+m)*PX)+'px';
+  s.cup.querySelector('.brimzone').style.height=(m*PX)+'px';
+  s.cup.querySelector('.mark').style.bottom=(T[s.size]*PX)+'px';
+}
+function renderStation(s){
+  const hasCup=!!s.size;
+  s.cup.style.display=hasCup?'block':'none';
+  s.ph.style.display=hasCup?'none':'flex';
+  s.fill.style.background=TYPES[s.type||G.menu[0]].fill;
+  s.stream.style.background=TYPES[s.type||G.menu[0]].color;
+  const locked=(s.state==='filling'||s.state==='result');
+  s.sizeBtns.forEach(b=>{b.classList.toggle('sel',b.dataset.s===s.size);b.disabled=locked;});
+  s.typeBtns.forEach(b=>{b.classList.toggle('sel',b.dataset.t===s.type);b.disabled=locked;});
+  s.cur.textContent=(s.multi&&s.type?TYPES[s.type].name:'')+(s.size?((s.multi&&s.type)?' ':'')+szName(s.size):'');
+  s.act.className='act';
+  if(s.state==='idle'){
+    let t='サイズを選ぶ';
+    if(s.multi){
+      if(s.size&&!s.type)t='種類を選ぶ';
+      else if(!s.size&&s.type)t='サイズを選ぶ';
+      else t='種類とサイズを選ぶ';
+    }
+    s.act.textContent=t;s.act.disabled=true;
+  }
+  else if(s.state==='ready'){s.act.textContent='開始';s.act.classList.add('go');s.act.disabled=false;}
+  else if(s.state==='filling'){s.act.textContent='停止';s.act.classList.add('stop');s.act.disabled=false;}
+  else {s.act.textContent='…';s.act.disabled=true;}
+  s.stream.style.display=s.state==='filling'?'block':'none';
+  updateFill(s);
+}
+function updateFill(s){
+  if(!s.size)return;
+  const px=Math.min(s.level,T[s.size]+G.d.margin)*PX;
+  s.fill.style.height=px+'px';
+  s.stream.style.bottom=(px+4)+'px';
+}
+function refreshReady(s){
+  s.state=(s.size&&s.type)?'ready':'idle';
+  s.level=0;s.msg.textContent='';
+  if(s.size)setCup(s);
+  renderStation(s);
+}
+function selectSize(s,sz){
+  if(G.over||G.paused)return;
+  if(s.state==='filling'||s.state==='result')return;
+  s.size=sz;refreshReady(s);
+}
+function selectType(s,t){
+  if(G.over||G.paused)return;
+  if(s.state==='filling'||s.state==='result')return;
+  s.type=t;refreshReady(s);
+}
+function stAct(s){
+  if(G.over||G.paused)return;
+  if(s.state==='ready'){
+    s.state='filling';s.level=0;s.crossed=false;s.msg.textContent='';
+    beep(440,0.08);renderStation(s);
+  }else if(s.state==='filling'){
+    stopFill(s,false);
+  }
+}
+function stopFill(s,auto){
+  const tgt=T[s.size],m=G.d.margin,lv=s.level;
+  let txt,cls='bad';
+  if(lv<tgt){txt='足りません';G.st.short++;beep(220,0.25,'square',0.05);}
+  else if(lv>tgt+m){txt='あふれた！';G.st.spill++;s.cup.classList.add('spill');beep(160,0.3,'sawtooth',0.05);}
+  else{
+    const perfect=lv<=tgt+m*0.5;
+    const r=serve(s.type,s.size,perfect);
+    if(r){txt=r.text;cls='good';}
+    else{txt='その注文はありません';G.st.wrong++;beep(260,0.25,'square',0.05);}
+  }
+  s.state='result';s.timer=1.2;s.msg.textContent=txt;s.msg.className='msg '+cls;
+  renderStation(s);updateHud();
+}
+function serve(type,size,perfect){
+  const o=G.orders.find(o=>o.drinks.some(d=>d.type===type&&d.size===size&&!d.done));
+  if(!o)return null;
+  o.drinks.find(d=>d.type===type&&d.size===size&&!d.done).done=true;
+  let pts=perfect?3:2;
+  if(perfect)G.st.perfect++;else G.st.ok++;
+  let text=perfect?'ぴったり！ +3':'OK！ +2';
+  beep(perfect?880:660,0.15);
+  if(o.drinks.every(d=>d.done)){
+    pts+=2;G.st.done++;text+='(注文完了 +2)';
+    G.orders=G.orders.filter(x=>x!==o);
+  }
+  G.score+=pts;
+  renderOrders();
+  return {text};
+}
+
+function spawnOrder(){
+  const n=Math.random()<0.5?1:2;
+  const drinks=[];
+  for(let i=0;i<n;i++){
+    drinks.push({type:G.menu[Math.floor(Math.random()*G.menu.length)],
+                 size:Math.random()<0.5?'S':'L',done:false});
+  }
+  G.spawned++;
+  // 待ち時間 = 間隔の4倍 + 10秒 + 淹れるのにかかる時間の合計
+  const brew=drinks.reduce((a,d)=>a+T[d.size],0);
+  const patience=G.interval*4+10+brew;
+  G.orders.push({id:G.nextId++,no:G.spawned,drinks,age:0,patience});
+  beep(1000,0.08,'triangle',0.05);
+  renderOrders();
+}
+function renderOrders(){
+  const box=$('#orders');box.innerHTML='';
+  if(!G.orders.length){box.innerHTML='<div class="empty">注文を待っています…</div>';return;}
+  G.orders.forEach(o=>{
+    const d=document.createElement('div');d.className='ticket';d.dataset.id=o.id;
+    d.innerHTML=`<div class="tno">注文 ${o.no}</div>`+
+      o.drinks.map(k=>`<div class="drow ${k.done?'done':''}"><i class="dot" style="background:${TYPES[k.type].fill}"></i><span class="dn">${TYPES[k.type].name}</span><span class="chip ${k.size}">${szName(k.size)}${k.done?' ✓':''}</span></div>`).join('')+
+      `<div class="bar"><i></i></div>`;
+    box.appendChild(d);
+  });
+  updBars();
+}
+function updBars(){
+  document.querySelectorAll('.ticket').forEach(el=>{
+    const o=G.orders.find(x=>x.id==el.dataset.id);if(!o)return;
+    const r=Math.max(0,1-o.age/o.patience);
+    const i=el.querySelector('.bar i');
+    i.style.width=(r*100)+'%';
+    i.style.background=r<0.3?'var(--warn)':'var(--ok)';
+  });
+}
+function updateHud(){
+  $('#score').textContent=G.score;
+  $('#prog').textContent=G.spawned;
+  $('#next').textContent=G.spawned<G.total?Math.max(0,Math.ceil(G.nextSpawn-G.t))+'秒':'-';
+}
+
+function loop(now){
+  if(!G||G.over)return;
+  let dt=Math.min((now-G.last)/1000,0.1);G.last=now;
+  if(!G.paused)tick(dt);
+  raf=requestAnimationFrame(loop);
+}
+function tick(dt){
+  G.t+=dt;
+  // 間隔が短い設定でも取りこぼさないよう、while で生成
+  while(G.spawned<G.total&&G.t>=G.nextSpawn){spawnOrder();G.nextSpawn+=G.interval;}
+  // 注文の待ち時間
+  let expired=false;
+  G.orders.forEach(o=>o.age+=dt);
+  const gone=G.orders.filter(o=>o.age>=o.patience);
+  if(gone.length){
+    gone.forEach(o=>{G.st.missed++;toast('注文'+o.no+'が時間切れになりました');beep(180,0.3,'square',0.05);});
+    G.orders=G.orders.filter(o=>o.age<o.patience);
+    expired=true;
+  }
+  // マシン
+  G.stations.forEach(s=>{
+    if(s.state==='filling'){
+      s.level+=dt;
+      if(!s.crossed&&s.level>=T[s.size]){s.crossed=true;beep(1200,0.06,'triangle',0.05);}
+      updateFill(s);
+      if(s.level>T[s.size]+G.d.margin+0.5)stopFill(s,true);
+    }else if(s.state==='result'){
+      s.timer-=dt;
+      if(s.timer<=0){
+        s.state='idle';resetSel(s);s.level=0;s.msg.textContent='';
+        renderStation(s);
+      }
+    }
+  });
+  if(expired)renderOrders();else updBars();
+  updateHud();
+  if(G.spawned>=G.total&&G.orders.length===0)finish();
+}
+function finish(){
+  G.over=true;cancelAnimationFrame(raf);
+  const s=G.st;
+  const made=s.perfect+s.ok, tries=made+s.short+s.spill+s.wrong;
+  const acc=tries?Math.round(made/tries*100):0;
+  $('#resGrid').innerHTML=`
+    <div>得点<b>${G.score}</b></div>
+    <div>完了した注文<b>${s.done} / ${G.total}</b></div>
+    <div>時間切れ<b>${s.missed}</b></div>
+    <div>ぴったり<b>${s.perfect}</b></div>
+    <div>OK<b>${s.ok}</b></div>
+    <div>足りない<b>${s.short}</b></div>
+    <div>あふれた<b>${s.spill}</b></div>
+    <div>注文にない杯<b>${s.wrong}</b></div>
+    <div>成功率<b>${acc}%</b></div>`;
+  let c;
+  if(s.missed===0&&acc>=85)c='すばらしい！ほぼ完璧なバリスタです。';
+  else if(s.missed<=1&&acc>=65)c='とても上手です。安定して淹れられています。';
+  else if(acc>=40)c='よくできました。あわてず、線を超えたら止めるのがコツです。';
+  else c='おつかれさまでした。ゆっくりのペースから、もう一度挑戦してみましょう。';
+  $('#comment').textContent=c;
+  show('result');
+}
+
+/* ---------- 操作 ---------- */
+function setPause(p){
+  if(!G||G.over)return;
+  G.paused=p;G.last=performance.now();
+  $('#pause').style.display=p?'flex':'none';
+}
+$('#pauseBtn').onclick=()=>setPause(true);
+$('#resumeBtn').onclick=()=>setPause(false);
+$('#quitBtn').onclick=()=>{
+  if(G){G.over=true;cancelAnimationFrame(raf);}
+  $('#pause').style.display='none';show('start');
+};
+document.addEventListener('keydown',e=>{
+  if(!G||G.over||G.paused||$('#game').classList.contains('hidden'))return;
+  const n=parseInt(e.key,10);
+  if(n>=1&&n<=G.stations.length){e.preventDefault();stAct(G.stations[n-1]);}
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true);});
+</script>
+</body>
+</html>
