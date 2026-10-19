@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>ひらがな たんごならべ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F1E3;
+    --paper-line: rgba(34,49,79,0.06);
+    --ink:#22314F;
+    --ink-soft:#5A6B8C;
+    --hanko:#B3312C;
+    --hanko-deep:#8E2620;
+    --gold:#C7A34C;
+    --gold-soft:#E8D9AE;
+    --ok:#4C7A5B;
+    --card:#FFFDF8;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(90deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 28px);
+    color:var(--ink);
+    font-family:'Noto Sans JP', sans-serif;
+    min-height:100vh;
+    padding:20px 14px 60px;
+  }
+  h1,h2,.big-char{font-family:'Zen Maru Gothic', sans-serif;}
+
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:18px;}
+  header h1{
+    font-size:26px;
+    font-weight:900;
+    margin:0 0 4px;
+    letter-spacing:.02em;
+    color:var(--ink);
+  }
+  header .sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+
+  .mode-select{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .mode-btn{
+    font-family:'Zen Maru Gothic', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:14px 8px;
+    border-radius:var(--radius);
+    border:2px solid transparent;
+    background:var(--card);
+    color:var(--ink-soft);
+    cursor:pointer;
+    box-shadow:0 1px 2px rgba(34,49,79,0.08);
+    transition:transform .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .mode-btn small{display:block;font-family:'Noto Sans JP';font-weight:400;font-size:11px;margin-top:3px;}
+  .mode-btn.active{
+    border-color:var(--hanko);
+    color:var(--hanko-deep);
+    transform:translateY(-1px);
+  }
+  .mode-btn:active{transform:scale(0.97);}
+
+  .cat-select{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:18px;
+  }
+  .chip{
+    font-family:'Zen Maru Gothic';
+    font-weight:700;
+    font-size:14px;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1.5px solid var(--gold-soft);
+    background:var(--card);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .chip.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#fff;
+  }
+
+  .panel{
+    background:var(--card);
+    border-radius:20px;
+    padding:22px 14px 22px;
+    box-shadow:0 2px 10px rgba(34,49,79,0.07);
+    position:relative;
+    overflow:hidden;
+  }
+
+  .hint{
+    text-align:center;
+    margin-bottom:14px;
+  }
+  .hint .cat-tag{
+    display:inline-block;
+    font-size:11px;
+    color:var(--gold);
+    border:1px solid var(--gold-soft);
+    padding:2px 10px;
+    border-radius:999px;
+    margin-bottom:10px;
+  }
+  .illustration{
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,0.5);
+  }
+  .illustration .emoji-display{
+    font-size:76px;
+    line-height:1;
+  }
+
+  .hint-row{
+    display:flex;
+    justify-content:center;
+  }
+  .board-row{
+    display:flex;
+    justify-content:center;
+  }
+  .illustration-wrap, .board-wrap{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .speaker-btn.illust-speaker{
+    position:absolute;
+    right:100%;
+    top:50%;
+    transform:translateY(-50%);
+    margin-right:12px;
+  }
+  .board-wrap{
+    max-width:calc(100% - 116px);
+  }
+  .speaker-btn.illust-speaker:active{
+    transform:translateY(-50%) scale(0.92);
+  }
+
+  @media (max-width: 480px){
+    .board-row{
+      flex-direction:column;
+      gap:8px;
+    }
+    .board-wrap{
+      flex-direction:column;
+      max-width:100%;
+      width:100%;
+    }
+    .board-row .speaker-btn.illust-speaker{
+      position:static;
+      transform:none;
+      margin:0;
+    }
+    .board-row .speaker-btn.illust-speaker:active{
+      transform:scale(0.92);
+    }
+    .board .cell, .bank .tile{
+      width:42px;
+      height:42px;
+      font-size:19px;
+    }
+    .board{
+      gap:5px;
+    }
+    .bank{
+      gap:6px;
+    }
+  }
+  .speaker-btn{
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    border:2px solid var(--gold);
+    background:var(--card);
+    color:var(--hanko-deep);
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    box-shadow:0 1px 4px rgba(34,49,79,0.15);
+  }
+  .speaker-btn:active{transform:scale(0.92);}
+
+  .progress{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:16px;
+    font-weight:500;
+  }
+  .progress b{color:var(--hanko-deep);}
+
+  .board{
+    display:flex;
+    gap:6px;
+    justify-content:center;
+    margin:0 auto 18px;
+    flex-wrap:wrap;
+  }
+  .cell{
+    width:52px;
+    height:52px;
+    border:2px solid var(--gold-soft);
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    font-weight:700;
+    color:var(--ink);
+    background:#fff;
+    position:relative;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .cell.filled{cursor:grab;border-color:var(--ink-soft);touch-action:none;}
+  .cell.drop-hover{border-color:var(--hanko);background:#FFF4E8;}
+  .cell.dragging-source{opacity:0.3;}
+  .cell.correct{
+    border-color:var(--ok);
+    background:#EFF6F1;
+    color:var(--ok);
+  }
+  .cell.wrong{
+    border-color:var(--hanko);
+    background:#FBEBEA;
+    color:var(--hanko-deep);
+  }
+
+  .bank-label{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .bank{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    min-height:52px;
+    padding:8px;
+    border-radius:12px;
+    background:var(--paper);
+  }
+  .tile{
+    width:46px;
+    height:46px;
+    border-radius:10px;
+    border:2px solid var(--ink);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    font-weight:700;
+    color:var(--ink);
+    cursor:grab;
+    touch-action:none;
+    transition:transform .1s ease, opacity .1s ease;
+  }
+  .tile.dragging-source{opacity:0.3;}
+  .drag-ghost{
+    position:fixed;
+    pointer-events:none;
+    z-index:9999;
+    opacity:0.9;
+    transform:scale(1.1);
+    box-shadow:0 4px 12px rgba(34,49,79,0.3);
+  }
+  .tile:active{transform:scale(0.92);}
+
+  .actions{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+  .action-btn{
+    font-family:'Zen Maru Gothic';
+    font-weight:700;
+    font-size:14px;
+    padding:10px 18px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+  }
+  .action-btn.primary{background:var(--hanko);color:#fff;}
+  .action-btn.secondary{background:transparent;color:var(--ink-soft);border:1.5px solid var(--gold-soft);}
+  .action-btn.next{background:var(--ok);color:#fff; display:none;}
+  .action-btn:active{transform:scale(0.96);}
+
+  .stamp-overlay{
+    position:absolute;
+    top:10px;
+    right:10px;
+    display:flex;
+    pointer-events:none;
+    opacity:0;
+    z-index:6;
+  }
+  .stamp-overlay.show{
+    animation:stampIn .5s ease forwards;
+  }
+  .stamp{
+    width:88px;
+    height:88px;
+    border-radius:50%;
+    border:5px solid var(--hanko);
+    color:var(--hanko);
+    font-family:'Zen Maru Gothic';
+    font-weight:900;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:rgba(255,253,248,0.95);
+    transform:rotate(-10deg);
+    box-shadow:0 0 0 3px rgba(179,49,44,0.15);
+  }
+  @keyframes stampIn{
+    0%{opacity:0; transform:scale(1.6) rotate(-8deg);}
+    60%{opacity:1; transform:scale(0.95) rotate(-8deg);}
+    80%{transform:scale(1.05) rotate(-8deg);}
+    100%{opacity:1; transform:scale(1) rotate(-8deg);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stamp-overlay.show{animation:none; opacity:1;}
+    .tile, .mode-btn, .action-btn{transition:none;}
+  }
+
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:24px;
+    opacity:.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ひらがな たんごならべ</h1>
+    <p class="sub">バラバラの文字から ことばを つくろう</p>
+  </header>
+
+  <div class="mode-select">
+    <button class="mode-btn active" id="modeLessonBtn">レッスンモード<small>カテゴリーごとに練習</small></button>
+    <button class="mode-btn" id="modeRandomBtn">ランダムモード<small>すべてのことば</small></button>
+  </div>
+
+  <div class="cat-select" id="catSelect"></div>
+
+  <div class="panel" id="panel">
+    <div class="stamp-overlay" id="stampOverlay"><div class="stamp">よく<br>できました</div></div>
+    <div class="hint">
+      <div class="cat-tag" id="catTag"></div>
+      <div class="hint-row">
+        <div class="illustration-wrap">
+          <button class="speaker-btn illust-speaker" id="speakerBtn" aria-label="こたえの読み上げ">🔊</button>
+          <div class="illustration" id="illustration"></div>
+        </div>
+      </div>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="board-row">
+      <div class="board-wrap">
+        <button class="speaker-btn illust-speaker" id="speakerBtn2" aria-label="ならべた文字の読み上げ">🔊</button>
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+    <div class="bank-label">タイルをドラッグして順番にならべよう</div>
+    <div class="bank" id="bank"></div>
+    <div class="actions">
+      <button class="action-btn secondary" id="shuffleBtn">元に戻す</button>
+      <button class="action-btn primary" id="checkBtn">答え合わせ</button>
+      <button class="action-btn next" id="nextBtn">つぎのことば →</button>
+    </div>
+  </div>
+
+  <footer>タイルをドラッグして配置 → マスの外に出すと戻せます</footer>
+</div>
+
+
+<script>
+const EMOJI = {
+  'ねこ': '🐱',
+  'いぬ': '🐶',
+  'うさぎ': '🐰',
+  'ぞう': '🐘',
+  'きりん': '🦒',
+  'さる': '🐒',
+  'とり': '🐦',
+  'くま': '🐻',
+  'とら': '🐯',
+  'ぱんだ': '🐼',
+  'かえる': '🐸',
+  'ひつじ': '🐑',
+  'ぶた': '🐷',
+  'うし': '🐮',
+  'うま': '🐴',
+  'にわとり': '🐓',
+  'ふくろう': '🦉',
+  'りんご': '🍎',
+  'ばなな': '🍌',
+  'ぱん': '🍞',
+  'たまご': '🥚',
+  'みかん': '🍊',
+  'すいか': '🍉',
+  'おにぎり': '🍙',
+  'おでん': '🍢',
+  'いちご': '🍓',
+  'あいす': '🍦',
+  'もも': '🍑',
+  'ぶどう': '🍇',
+  'さくらんぼ': '🍒',
+  'にんじん': '🥕',
+  'おすし': '🍣',
+  'やきいも': '🍠',
+  'くり': '🌰',
+  'くるま': '🚗',
+  'でんしゃ': '🚃',
+  'ひこうき': '✈️',
+  'じてんしゃ': '🚲',
+  'ふね': '🚢',
+  'ろけっと': '🚀',
+  'きゅうきゅうしゃ': '🚑',
+  'しょうぼうしゃ': '🚒',
+  'いす': '🪑',
+  'まど': '🪟',
+  'かばん': '🎒',
+  'とけい': '⏰',
+  'ほん': '📖',
+  'かさ': '☂️',
+  'めがね': '👓',
+  'かめら': '📷',
+  'かがみ': '🪞',
+  'くつした': '🧦',
+  'てぶくろ': '🧤',
+  'ぼうし': '🎩',
+  'かぎ': '🔑',
+  'はさみ': '✂️',
+  'えんぴつ': '✏️',
+  'くじら': '🐳',
+  'さかな': '🐟',
+  'たこ': '🐙',
+  'かに': '🦀',
+  'えび': '🦐',
+  'いるか': '🐬',
+  'め': '👁️',
+  'みみ': '👂',
+  'はな': '👃',
+  'くち': '👄',
+  'て': '✋',
+  'あし': '🦶',
+  'たいよう': '☀️',
+  'つき': '🌙',
+  'ほし': '⭐',
+  'くも': '☁️',
+  'あめ': '🌧️',
+  'ゆき': '❄️',
+  'にじ': '🌈',
+  'やま': '⛰️',
+  'うみ': '🌊',
+  'あり': '🐜',
+  'はち': '🐝',
+  'ちょう': '🦋',
+  'かぶとむし': '🪲',
+  'ぴーまん': '🫑',
+  'とまと': '🍅',
+  'あぼかど': '🥑',
+  'なす': '🍆',
+  'じゃがいも': '🥔',
+  'とうもろこし': '🌽',
+  'とうがらし': '🌶️',
+  'ぶろっこりー': '🥦',
+  'たまねぎ': '🧅',
+  'れもん': '🍋',
+  'ぱいなっぷる': '🍍',
+  'めろん': '🍈',
+  'ちーず': '🧀',
+  'はんばーがー': '🍔',
+  'ぴざ': '🍕',
+  'ほっとどっぐ': '🌭',
+  'せんべい': '🍘',
+  'ぽっぷこーん': '🍿',
+  'ごはん': '🍚',
+  'かれー': '🍛',
+  'だんご': '🍡',
+  'どーなつ': '🍩',
+  'けーき': '🍰',
+  'ちょこ': '🍫',
+  'ぷりん': '🍮',
+  'きゃんでぃ': '🍭',
+  'びーる': '🍺',
+  'こーひー': '☕',
+  'はし': '🥢',
+  'すぷーん': '🥄',
+  'ほうちょう': '🔪',
+  'ねずみ': '🐁',
+  'らいおん': '🦁',
+  'ぺんぎん': '🐧',
+  'ふらみんご': '🦩',
+  'てんとうむし': '🐞',
+  'さくら': '🌸',
+  'ひまわり': '🌻',
+  'ちゅーりっぷ': '🌷',
+  'さぼてん': '🌵',
+  'きのこ': '🍄',
+  'さっかー': '⚽',
+  'やきゅう': '⚾',
+  'ばすけ': '🏀',
+  'あめふと': '🏈',
+  'てにす': '🎾',
+  'ぼうりんぐ': '🎳',
+  'たっきゅう': '🏓',
+  'さいころ': '🎲',
+  'きゃっぷ': '🧢',
+  'ゆびわ': '💍',
+  'すず': '🔔',
+  'まいく': '🎤',
+  'らじお': '📻',
+  'でんわ': '☎️',
+  'そろばん': '🧮',
+  'てれび': '📺',
+  'ろうそく': '🕯️',
+  'でんきゅう': '💡',
+  'ものさし': '📏',
+  'ごみばこ': '🗑️',
+  'とんかち': '🔨',
+  'ぶーめらん': '🪃',
+  'のこぎり': '🪚',
+  'どらいばー': '🪛',
+  'じしゃく': '🧲',
+  'はしご': '🪜',
+  'すこっぷ': '🪏',
+  'ぼうえんきょう': '🔭',
+  'ちゅうしゃき': '💉',
+  'くすり': '💊',
+  'ばんそうこう': '🩹',
+  'どあ': '🚪',
+  'べっど': '🛏️',
+  'かみそり': '🪒',
+  'ほうき': '🧹',
+  'といれっとぺーぱー': '🧻',
+  'ばけつ': '🪣',
+  'せっけん': '🧼',
+  'はぶらし': '🪥',
+  'すぽんじ': '🧽',
+  'たばこ': '🚬',
+  'けいば': '🏇',
+  'すきー': '⛷️',
+  'おんせん': '♨️',
+  'てんと': '⛺',
+  'しんかんせん': '🚅',
+  'ばす': '🚌',
+  'ぱとかー': '🚓',
+  'たくしー': '🚕',
+  'ばいく': '🏍️',
+  'くるまいす': '🦽',
+  'へりこぷたー': '🚁',
+  'しんごう': '🚥',
+  'うでどけい': '⌚',
+};
+
+const CATEGORIES = [
+  {key:'animal', label:'どうぶつ', bg:'#F3E3C9', words:[
+    {word:'ねこ', meaning:'cat'},
+    {word:'いぬ', meaning:'dog'},
+    {word:'うさぎ', meaning:'rabbit'},
+    {word:'ぞう', meaning:'elephant'},
+    {word:'きりん', meaning:'giraffe'},
+    {word:'さる', meaning:'monkey'},
+    {word:'とり', meaning:'bird'},
+    {word:'くま', meaning:'bear'},
+    {word:'とら', meaning:'tiger'},
+    {word:'ぱんだ', meaning:'panda'},
+    {word:'かえる', meaning:'frog'},
+    {word:'ひつじ', meaning:'sheep'},
+    {word:'ぶた', meaning:'pig'},
+    {word:'うし', meaning:'cow'},
+    {word:'うま', meaning:'horse'},
+    {word:'にわとり', meaning:'chicken'},
+    {word:'ふくろう', meaning:'owl'},
+    {word:'ねずみ', meaning:'mouse'},
+    {word:'らいおん', meaning:'lion'},
+    {word:'ぺんぎん', meaning:'penguin'},
+    {word:'ふらみんご', meaning:'flamingo'},
+    {word:'てんとうむし', meaning:'ladybug'},
+  ]},
+  {key:'food', label:'たべもの', bg:'#FBE3D0', words:[
+    {word:'りんご', meaning:'apple'},
+    {word:'ばなな', meaning:'banana'},
+    {word:'ぱん', meaning:'bread'},
+    {word:'たまご', meaning:'egg'},
+    {word:'みかん', meaning:'mandarin orange'},
+    {word:'すいか', meaning:'watermelon'},
+    {word:'おにぎり', meaning:'rice ball'},
+    {word:'おでん', meaning:'oden'},
+    {word:'いちご', meaning:'strawberry'},
+    {word:'あいす', meaning:'ice cream'},
+    {word:'もも', meaning:'peach'},
+    {word:'ぶどう', meaning:'grape'},
+    {word:'さくらんぼ', meaning:'cherry'},
+    {word:'にんじん', meaning:'carrot'},
+    {word:'おすし', meaning:'sushi'},
+    {word:'やきいも', meaning:'roasted sweet potato'},
+    {word:'くり', meaning:'chestnut'},
+    {word:'れもん', meaning:'lemon'},
+    {word:'ぱいなっぷる', meaning:'pineapple'},
+    {word:'めろん', meaning:'melon'},
+  ]},
+  {key:'vehicle', label:'のりもの', bg:'#DCEAF0', words:[
+    {word:'くるま', meaning:'car'},
+    {word:'でんしゃ', meaning:'train'},
+    {word:'ひこうき', meaning:'airplane'},
+    {word:'じてんしゃ', meaning:'bicycle'},
+    {word:'ふね', meaning:'ship'},
+    {word:'ろけっと', meaning:'rocket'},
+    {word:'きゅうきゅうしゃ', meaning:'ambulance'},
+    {word:'しょうぼうしゃ', meaning:'fire engine'},
+    {word:'しんかんせん', meaning:'bullet train'},
+    {word:'ばす', meaning:'bus'},
+    {word:'ぱとかー', meaning:'police car'},
+    {word:'たくしー', meaning:'taxi'},
+    {word:'ばいく', meaning:'motorcycle'},
+    {word:'くるまいす', meaning:'wheelchair'},
+    {word:'へりこぷたー', meaning:'helicopter'},
+  ]},
+  {key:'home', label:'いえのもの', bg:'#E7E6D8', words:[
+    {word:'いす', meaning:'chair'},
+    {word:'まど', meaning:'window'},
+    {word:'かばん', meaning:'bag'},
+    {word:'とけい', meaning:'clock'},
+    {word:'ほん', meaning:'book'},
+    {word:'かさ', meaning:'umbrella'},
+    {word:'めがね', meaning:'glasses'},
+    {word:'かめら', meaning:'camera'},
+    {word:'かがみ', meaning:'mirror'},
+    {word:'くつした', meaning:'socks'},
+    {word:'てぶくろ', meaning:'gloves'},
+    {word:'ぼうし', meaning:'hat'},
+    {word:'かぎ', meaning:'key'},
+    {word:'はさみ', meaning:'scissors'},
+    {word:'えんぴつ', meaning:'pencil'},
+    {word:'きゃっぷ', meaning:'cap'},
+    {word:'ゆびわ', meaning:'ring'},
+    {word:'すず', meaning:'bell'},
+    {word:'まいく', meaning:'microphone'},
+    {word:'らじお', meaning:'radio'},
+    {word:'でんわ', meaning:'telephone'},
+    {word:'そろばん', meaning:'abacus'},
+    {word:'てれび', meaning:'TV'},
+    {word:'ろうそく', meaning:'candle'},
+    {word:'でんきゅう', meaning:'light bulb'},
+    {word:'ものさし', meaning:'ruler'},
+    {word:'ごみばこ', meaning:'trash can'},
+    {word:'どあ', meaning:'door'},
+    {word:'べっど', meaning:'bed'},
+    {word:'うでどけい', meaning:'wristwatch'},
+    {word:'しんごう', meaning:'traffic light'},
+  ]},
+  {key:'sea', label:'うみのいきもの', bg:'#D7EAE6', words:[
+    {word:'さかな', meaning:'fish'},
+    {word:'たこ', meaning:'octopus'},
+    {word:'かに', meaning:'crab'},
+    {word:'えび', meaning:'shrimp'},
+    {word:'いるか', meaning:'dolphin'},
+    {word:'くじら', meaning:'whale'},
+  ]},
+  {key:'body', label:'からだ', bg:'#F0DCE0', words:[
+    {word:'め', meaning:'eye'},
+    {word:'みみ', meaning:'ear'},
+    {word:'はな', meaning:'nose'},
+    {word:'くち', meaning:'mouth'},
+    {word:'て', meaning:'hand'},
+    {word:'あし', meaning:'foot / leg'},
+  ]},
+  {key:'nature', label:'しぜん・てんき', bg:'#E1E3F0', words:[
+    {word:'たいよう', meaning:'sun'},
+    {word:'つき', meaning:'moon'},
+    {word:'ほし', meaning:'star'},
+    {word:'くも', meaning:'cloud'},
+    {word:'あめ', meaning:'rain'},
+    {word:'ゆき', meaning:'snow'},
+    {word:'にじ', meaning:'rainbow'},
+    {word:'やま', meaning:'mountain'},
+    {word:'うみ', meaning:'sea'},
+  ]},
+  {key:'bug', label:'むし', bg:'#E6E9D3', words:[
+    {word:'あり', meaning:'ant'},
+    {word:'はち', meaning:'bee'},
+    {word:'ちょう', meaning:'butterfly'},
+    {word:'かぶとむし', meaning:'beetle'},
+  ]},
+  {key:'vegetable', label:'やさい', bg:'#DCEAD2', words:[
+    {word:'ぴーまん', meaning:'bell pepper'},
+    {word:'とまと', meaning:'tomato'},
+    {word:'あぼかど', meaning:'avocado'},
+    {word:'なす', meaning:'eggplant'},
+    {word:'じゃがいも', meaning:'potato'},
+    {word:'とうもろこし', meaning:'corn'},
+    {word:'とうがらし', meaning:'chili pepper'},
+    {word:'ぶろっこりー', meaning:'broccoli'},
+    {word:'たまねぎ', meaning:'onion'},
+  ]},
+  {key:'snack', label:'ファーストフード・おやつ', bg:'#F7D9C4', words:[
+    {word:'ちーず', meaning:'cheese'},
+    {word:'はんばーがー', meaning:'hamburger'},
+    {word:'ぴざ', meaning:'pizza'},
+    {word:'ほっとどっぐ', meaning:'hot dog'},
+    {word:'せんべい', meaning:'rice cracker'},
+    {word:'ぽっぷこーん', meaning:'popcorn'},
+    {word:'ごはん', meaning:'cooked rice'},
+    {word:'かれー', meaning:'curry rice'},
+    {word:'だんご', meaning:'dango'},
+    {word:'どーなつ', meaning:'donut'},
+    {word:'けーき', meaning:'cake'},
+    {word:'ちょこ', meaning:'chocolate'},
+    {word:'ぷりん', meaning:'pudding'},
+    {word:'きゃんでぃ', meaning:'candy'},
+  ]},
+  {key:'drink', label:'のみもの・キッチン', bg:'#E3D5C8', words:[
+    {word:'びーる', meaning:'beer'},
+    {word:'こーひー', meaning:'coffee'},
+    {word:'はし', meaning:'chopsticks'},
+    {word:'すぷーん', meaning:'spoon'},
+    {word:'ほうちょう', meaning:'kitchen knife'},
+  ]},
+  {key:'plant', label:'しょくぶつ', bg:'#F0DCEA', words:[
+    {word:'さくら', meaning:'cherry blossom'},
+    {word:'ひまわり', meaning:'sunflower'},
+    {word:'ちゅーりっぷ', meaning:'tulip'},
+    {word:'さぼてん', meaning:'cactus'},
+    {word:'きのこ', meaning:'mushroom'},
+  ]},
+  {key:'sport', label:'スポーツ', bg:'#D6E4F0', words:[
+    {word:'さっかー', meaning:'soccer'},
+    {word:'やきゅう', meaning:'baseball'},
+    {word:'ばすけ', meaning:'basketball'},
+    {word:'あめふと', meaning:'american football'},
+    {word:'てにす', meaning:'tennis'},
+    {word:'ぼうりんぐ', meaning:'bowling'},
+    {word:'たっきゅう', meaning:'table tennis'},
+    {word:'さいころ', meaning:'dice'},
+    {word:'けいば', meaning:'horse racing'},
+    {word:'すきー', meaning:'skiing'},
+  ]},
+  {key:'tool', label:'どうぐ', bg:'#EAD9C4', words:[
+    {word:'とんかち', meaning:'hammer'},
+    {word:'ぶーめらん', meaning:'boomerang'},
+    {word:'のこぎり', meaning:'saw'},
+    {word:'どらいばー', meaning:'screwdriver'},
+    {word:'じしゃく', meaning:'magnet'},
+    {word:'はしご', meaning:'ladder'},
+    {word:'すこっぷ', meaning:'shovel'},
+    {word:'ぼうえんきょう', meaning:'telescope'},
+    {word:'かみそり', meaning:'razor'},
+    {word:'ほうき', meaning:'broom'},
+    {word:'といれっとぺーぱー', meaning:'toilet paper'},
+    {word:'ばけつ', meaning:'bucket'},
+    {word:'せっけん', meaning:'soap'},
+    {word:'はぶらし', meaning:'toothbrush'},
+    {word:'すぽんじ', meaning:'sponge'},
+  ]},
+  {key:'health', label:'けんこう', bg:'#F5DCDC', words:[
+    {word:'ちゅうしゃき', meaning:'syringe'},
+    {word:'くすり', meaning:'medicine'},
+    {word:'ばんそうこう', meaning:'bandage'},
+    {word:'たばこ', meaning:'cigarette'},
+  ]},
+  {key:'outdoor', label:'あそび・おでかけ', bg:'#DDEDD9', words:[
+    {word:'おんせん', meaning:'hot spring'},
+    {word:'てんと', meaning:'tent'},
+  ]},
+];
+
+let state = {
+  mode: 'lesson',       // 'lesson' | 'random'
+  catKey: 'animal',
+  queue: [],             // shuffled list of word-entries left to play (lesson: within category, random: all)
+  current: null,         // current word entry {word, meaning, catLabel}
+  slots: [],
+  bank: [],
+  initialOrder: [],      // the shuffled order shown when the word first loaded
+  solved: false,
+};
+
+const catSelect = document.getElementById('catSelect');
+const boardEl = document.getElementById('board');
+const bankEl = document.getElementById('bank');
+const progressEl = document.getElementById('progress');
+const illustrationEl = document.getElementById('illustration');
+const catTagEl = document.getElementById('catTag');
+const speakerBtn = document.getElementById('speakerBtn');
+const speakerBtn2 = document.getElementById('speakerBtn2');
+const stampOverlay = document.getElementById('stampOverlay');
+const modeLessonBtn = document.getElementById('modeLessonBtn');
+const modeRandomBtn = document.getElementById('modeRandomBtn');
+const nextBtn = document.getElementById('nextBtn');
+const checkBtn = document.getElementById('checkBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 0.85;
+  window.speechSynthesis.speak(utter);
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildCatSelect(){
+  catSelect.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (c.key===state.catKey ? ' active':'');
+    b.textContent = c.label;
+    b.onclick = ()=>{ state.catKey = c.key; buildQueue(); startWord(); buildCatSelect(); };
+    catSelect.appendChild(b);
+  });
+}
+
+function buildQueue(){
+  if(state.mode === 'lesson'){
+    const cat = CATEGORIES.find(c=>c.key===state.catKey);
+    state.queue = shuffle(cat.words.map(w=>({...w, catLabel:cat.label, catBg:cat.bg})));
+  } else {
+    const all = [];
+    CATEGORIES.forEach(c=> c.words.forEach(w=> all.push({...w, catLabel:c.label, catBg:c.bg})));
+    state.queue = shuffle(all);
+  }
+}
+
+function startWord(){
+  if(state.queue.length === 0) buildQueue();
+  state.current = state.queue.shift();
+  const letters = Array.from(state.current.word);
+  state.slots = letters.map(l=>({answer:l, placedChar:null, flag:null}));
+  state.initialOrder = shuffle(letters);
+  state.bank = state.initialOrder.map(c=>({char:c, used:false}));
+  state.solved = false;
+  stampOverlay.classList.remove('show');
+  nextBtn.style.display = 'none';
+  checkBtn.style.display = 'inline-block';
+  render();
+}
+
+function render(){
+  catTagEl.textContent = state.current.catLabel;
+  illustrationEl.style.background = state.current.catBg;
+  illustrationEl.setAttribute('aria-label', state.current.meaning);
+  illustrationEl.innerHTML = `<span class="emoji-display">${EMOJI[state.current.word] || '❔'}</span>`;
+  renderBoard();
+  renderBank();
+  renderProgress();
+}
+
+function renderBoard(){
+  boardEl.innerHTML = '';
+  state.slots.forEach((slot, idx)=>{
+    const cell = document.createElement('div');
+    cell.className = 'cell ' + (slot.placedChar ? 'filled' : '');
+    if(slot.flag==='correct') cell.classList.add('correct');
+    if(slot.flag==='wrong') cell.classList.add('wrong');
+    cell.dataset.slot = idx;
+    cell.textContent = slot.placedChar || '';
+    if(slot.placedChar){
+      cell.onpointerdown = (e)=> startDrag(e, 'slot', idx, slot.placedChar, cell);
+    }
+    boardEl.appendChild(cell);
+  });
+}
+
+function renderBank(){
+  bankEl.innerHTML = '';
+  state.bank.forEach((item, i)=>{
+    if(item.used) return;
+    const t = document.createElement('div');
+    t.className = 'tile';
+    t.textContent = item.char;
+    t.onpointerdown = (e)=> startDrag(e, 'bank', i, item.char, t);
+    bankEl.appendChild(t);
+  });
+}
+
+function renderProgress(){
+  const catLen = state.mode==='lesson'
+    ? CATEGORIES.find(c=>c.key===state.catKey).words.length
+    : CATEGORIES.reduce((s,c)=>s+c.words.length,0);
+  const done = catLen - state.queue.length; // includes current word as "in progress" count
+  progressEl.innerHTML = `<b>${done}</b> / ${catLen} ことば`;
+}
+
+let dragState = null;
+
+function startDrag(e, sourceType, sourceIndex, char, originEl){
+  if(state.solved) return;
+  if(sourceType==='bank' && state.bank[sourceIndex].used) return;
+  e.preventDefault();
+  dragState = {sourceType, sourceIndex, char};
+  const ghost = document.createElement('div');
+  ghost.className = (sourceType==='bank' ? 'tile' : 'cell filled') + ' drag-ghost';
+  ghost.textContent = char;
+  document.body.appendChild(ghost);
+  dragState.ghost = ghost;
+  positionGhost(e.clientX, e.clientY);
+  originEl.classList.add('dragging-source');
+  document.addEventListener('pointermove', onDragMove);
+  document.addEventListener('pointerup', onDragEnd, {once:true});
+}
+
+function positionGhost(x, y){
+  if(!dragState || !dragState.ghost) return;
+  const g = dragState.ghost;
+  g.style.left = (x - g.offsetWidth/2) + 'px';
+  g.style.top = (y - g.offsetHeight/2) + 'px';
+}
+
+function onDragMove(e){
+  if(!dragState) return;
+  positionGhost(e.clientX, e.clientY);
+  document.querySelectorAll('.cell.drop-hover').forEach(c=>c.classList.remove('drop-hover'));
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = el && el.closest('.cell');
+  if(cell && cell.dataset.slot !== undefined) cell.classList.add('drop-hover');
+}
+
+function onDragEnd(e){
+  document.removeEventListener('pointermove', onDragMove);
+  document.querySelectorAll('.cell.drop-hover').forEach(c=>c.classList.remove('drop-hover'));
+  if(!dragState) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = el && el.closest('.cell');
+  if(cell && cell.dataset.slot !== undefined){
+    dropOnSlot(parseInt(cell.dataset.slot, 10));
+  } else if(dragState.sourceType === 'slot'){
+    returnSlotToBank(dragState.sourceIndex);
+  }
+  if(dragState.ghost) dragState.ghost.remove();
+  dragState = null;
+  render();
+}
+
+function dropOnSlot(targetIdx){
+  if(state.solved) return;
+  const { sourceType, sourceIndex } = dragState;
+  if(sourceType === 'bank'){
+    const existing = state.slots[targetIdx].placedChar;
+    if(existing){
+      const item = state.bank.find(b=>b.used && b.char===existing);
+      if(item) item.used = false;
+    }
+    const ch = state.bank[sourceIndex].char;
+    state.slots[targetIdx].placedChar = ch;
+    state.slots[targetIdx].flag = null;
+    state.bank[sourceIndex].used = true;
+    speak(ch);
+  } else if(sourceType === 'slot'){
+    if(sourceIndex === targetIdx) return;
+    const temp = state.slots[targetIdx].placedChar;
+    state.slots[targetIdx].placedChar = state.slots[sourceIndex].placedChar;
+    state.slots[targetIdx].flag = null;
+    state.slots[sourceIndex].placedChar = temp;
+    state.slots[sourceIndex].flag = null;
+    speak(state.slots[targetIdx].placedChar);
+  }
+}
+
+function returnSlotToBank(slotIdx){
+  const ch = state.slots[slotIdx].placedChar;
+  state.slots[slotIdx].placedChar = null;
+  state.slots[slotIdx].flag = null;
+  const bankItem = state.bank.find(b=>b.used && b.char===ch);
+  if(bankItem) bankItem.used = false;
+}
+
+function checkAnswers(){
+  let allCorrect = true;
+  const wrongSlots = [];
+  state.slots.forEach((s, idx)=>{
+    if(!s.placedChar){ s.flag = null; allCorrect = false; return; }
+    if(s.placedChar === s.answer){ s.flag = 'correct'; }
+    else { s.flag = 'wrong'; wrongSlots.push(idx); allCorrect = false; }
+  });
+  render();
+  if(allCorrect){
+    state.solved = true;
+    stampOverlay.classList.add('show');
+    nextBtn.style.display = 'inline-block';
+    checkBtn.style.display = 'none';
+  } else if(wrongSlots.length){
+    setTimeout(()=> returnWrongTiles(wrongSlots), 700);
+  }
+}
+
+function returnWrongTiles(slotIndices){
+  const bankRect = bankEl.getBoundingClientRect();
+  slotIndices.forEach(idx=>{
+    const cellEl = boardEl.querySelector(`[data-slot="${idx}"]`);
+    const ch = state.slots[idx].placedChar;
+    if(!cellEl || !ch) return;
+    const rect = cellEl.getBoundingClientRect();
+
+    const clone = document.createElement('div');
+    clone.className = 'tile drag-ghost';
+    clone.textContent = ch;
+    clone.style.position = 'fixed';
+    clone.style.left = rect.left + (rect.width-46)/2 + 'px';
+    clone.style.top = rect.top + (rect.height-46)/2 + 'px';
+    clone.style.transform = 'none';
+    clone.style.transition = 'left 0.8s ease, top 0.8s ease, opacity 0.8s ease';
+    document.body.appendChild(clone);
+
+    cellEl.textContent = '';
+    cellEl.classList.remove('filled','wrong');
+    delete cellEl.onpointerdown;
+    state.slots[idx].placedChar = null;
+    state.slots[idx].flag = null;
+
+    requestAnimationFrame(()=>{
+      clone.style.left = bankRect.left + 10 + 'px';
+      clone.style.top = bankRect.top + 10 + 'px';
+      clone.style.opacity = '0.4';
+    });
+    setTimeout(()=>{
+      clone.remove();
+      const bankItem = state.bank.find(b=> b.char===ch && b.used);
+      if(bankItem) bankItem.used = false;
+      render();
+    }, 820);
+  });
+}
+
+speakerBtn.onclick = ()=> speak(state.current.word);
+speakerBtn2.onclick = ()=>{
+  const placed = state.slots.map(s=>s.placedChar).filter(Boolean).join('');
+  if(placed) speak(placed);
+};
+
+shuffleBtn.onclick = ()=>{
+  state.slots.forEach(s=>{ s.placedChar=null; s.flag=null; });
+  state.bank = state.initialOrder.map(c=>({char:c, used:false}));
+  stampOverlay.classList.remove('show');
+  render();
+};
+checkBtn.onclick = checkAnswers;
+nextBtn.onclick = startWord;
+
+modeLessonBtn.onclick = ()=>{
+  state.mode = 'lesson';
+  modeLessonBtn.classList.add('active');
+  modeRandomBtn.classList.remove('active');
+  catSelect.style.display = 'flex';
+  buildQueue();
+  startWord();
+};
+modeRandomBtn.onclick = ()=>{
+  state.mode = 'random';
+  modeRandomBtn.classList.add('active');
+  modeLessonBtn.classList.remove('active');
+  catSelect.style.display = 'none';
+  buildQueue();
+  startWord();
+};
+
+buildCatSelect();
+buildQueue();
+startWord();
+</script>
+</body>
+</html>

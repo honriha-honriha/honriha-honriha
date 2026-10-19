@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>聴覚的理解トレーニング(食べ物動物版・設定自由)</title>
+<style>
+  :root{
+    --bg: #EEF1ED; --surface:#FFFFFF; --ink:#263238; --ink-soft:#5B6B70;
+    --teal:#3B6E71; --teal-dark:#2A4F52; --gold:#B98900; --warn:#A6503A; --good:#3E7A4C; --border:#D8DED9;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Meiryo",sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  #app{ min-height:100%; display:flex; flex-direction:column; align-items:center; padding:24px 16px 48px; }
+  .wrap{ width:100%; max-width:600px; }
+  h1.title{ font-size:20px; font-weight:700; margin:4px 0 2px; color:var(--teal-dark); }
+  p.sub{ font-size:14px; color:var(--ink-soft); margin:0 0 18px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(38,51,56,0.04); }
+  button{ font-family:inherit; }
+  .primary-btn{ width:100%; padding:16px; border:none; border-radius:12px; background:var(--teal); color:#fff;
+    font-size:16px; font-weight:700; cursor:pointer; min-height:56px; }
+  .primary-btn:active{ background:var(--teal-dark); }
+  .ghost-btn{ width:100%; padding:14px; border:1.5px solid var(--border); border-radius:12px; background:transparent;
+    color:var(--ink-soft); font-size:15px; font-weight:600; cursor:pointer; min-height:52px; margin-bottom:10px;}
+  .ghost-btn:active{ background:#F0F2EF; }
+  .back-btn{ background:none; border:none; color:var(--teal-dark); font-size:15px; font-weight:600; cursor:pointer; padding:8px 0; }
+  .top-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .link-btn{ background:none; border:none; color:var(--ink-soft); font-size:13px; font-weight:600; cursor:pointer;
+    text-decoration:underline; padding:6px; }
+  label.field-label{ display:block; font-size:13px; color:var(--ink-soft); margin:0 0 6px; font-weight:600; }
+  select{ width:100%; padding:12px; border-radius:10px; border:1.5px solid var(--border); font-size:15px;
+    background:var(--surface); color:var(--ink); }
+  .setting-row{ margin-bottom:16px; }
+  .setting-row:last-child{ margin-bottom:0; }
+  .setting-hint{ font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.6; }
+
+  .progress-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .q-count{ font-size:14px; color:var(--ink-soft); font-weight:600; }
+  .pace-track{ height:8px; background:var(--border); border-radius:999px; overflow:hidden; margin-bottom:18px; }
+  .pace-fill{ height:100%; background:var(--teal); border-radius:999px; width:100%; }
+  .speak-row{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; }
+  .speak-icon{ width:52px; height:52px; border-radius:50%; background:var(--teal); color:#fff; border:none;
+    font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .speak-hint{ font-size:13px; color:var(--ink-soft); }
+
+  .opt-card{ background:var(--surface); border:2.5px solid var(--border); border-radius:14px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .12s, transform .08s; }
+  .opt-card:active{ transform:scale(0.97); }
+  .opt-card.selected{ border-color:var(--gold); background:#FFF9EC; }
+  .opt-icon{ display:flex; align-items:center; justify-content:center; }
+
+  .options-vertical{ display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+  .options-vertical .opt-card{ padding:12px 16px; }
+
+  .options-grid{ display:grid; gap:10px; margin-bottom:8px; }
+  .options-grid .opt-card{ padding:10px 6px; aspect-ratio:1/1; }
+
+  .options-triangle{ margin-bottom:8px; }
+  .tri-row-top{ display:flex; justify-content:center; margin-bottom:14px; }
+  .tri-row-bottom{ display:flex; justify-content:space-between; gap:14px; }
+  .options-triangle .opt-card{ width:132px; height:110px; padding:14px; }
+
+  .selected-hint{ text-align:center; font-size:13px; color:var(--gold); font-weight:700; min-height:18px; margin-top:6px;}
+  .exit-row{ display:flex; justify-content:center; gap:10px; margin-top:10px; }
+  .pause-btn{ background:none; border:1.5px solid var(--border); color:var(--teal-dark); font-size:13px; font-weight:700;
+    cursor:pointer; padding:8px 16px; border-radius:999px; }
+  .pause-btn.is-paused{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+  .result-hero{ text-align:center; padding:8px 0 4px; }
+  .result-big{ font-size:44px; font-weight:700; color:var(--teal-dark); }
+  .result-sub{ font-size:14px; color:var(--ink-soft); margin-top:2px; }
+  .stat-grid{ display:flex; gap:10px; margin:18px 0; }
+  .stat-box{ flex:1; background:#F6F8F5; border-radius:12px; padding:14px; text-align:center; }
+  .stat-box .v{ font-size:20px; font-weight:700; color:var(--ink); }
+  .stat-box .l{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+
+  .review-row{ display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--border); }
+  .review-row:last-child{ border-bottom:none; }
+  .review-num{ flex:0 0 30px; font-size:13px; color:var(--ink-soft); font-weight:700; }
+  .review-icons{ display:flex; gap:6px; }
+  .review-icon-box{ width:48px; height:48px; border-radius:10px; border:2px solid var(--border); display:flex;
+    align-items:center; justify-content:center; background:#fff; font-size:28px; }
+  .review-icon-box.correct{ border-color:var(--good); }
+  .review-icon-box.wrong{ border-color:var(--warn); }
+  .review-body{ flex:1; }
+  .review-target{ font-size:13px; font-weight:700; color:var(--ink); }
+  .review-status{ font-size:12px; margin-top:2px; }
+  .review-status.ok{ color:var(--good); font-weight:700; }
+  .review-status.ng{ color:var(--warn); font-weight:700; }
+  .review-status.none{ color:var(--ink-soft); font-weight:700; }
+  .replay-btn{ flex:0 0 auto; width:34px; height:34px; border-radius:50%; border:none; background:var(--teal);
+    color:#fff; font-size:14px; cursor:pointer; }
+  .review-filter{ display:flex; gap:8px; margin-bottom:10px; }
+  .review-filter button{ flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink-soft); font-weight:600; font-size:13px; cursor:pointer; }
+  .review-filter button.active{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+  .hist-row{ display:flex; justify-content:space-between; align-items:center; padding:12px 4px; border-bottom:1px solid var(--border); font-size:14px; }
+  .hist-row:last-child{ border-bottom:none; }
+  .hist-date{ color:var(--ink-soft); font-size:12px; }
+  .hist-metric{ text-align:right; }
+  .hist-metric b{ color:var(--teal-dark); font-size:16px; }
+  canvas{ width:100%; height:140px; }
+  .empty-hint{ color:var(--ink-soft); font-size:13px; padding:6px 2px; }
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap" id="wrap"></div></div>
+
+<script>
+/* ============ アイコン描画ヘルパー(絵文字文字を直接表示・外部通信なし) ============ */
+function iconHtml(word, emoji, size){
+  size = size || 48;
+  return `<span style="font-size:${size}px; line-height:1; display:inline-block;">${emoji}</span>`;
+}
+
+/* ============ 単語バンク(食べ物・動物版・99語) ============ */
+const WORDS = [
+  {key:"メロン", emoji:"🍈"}, {key:"すいか", emoji:"🍉"}, {key:"みかん", emoji:"🍊"}, {key:"レモン", emoji:"🍋"}, {key:"バナナ", emoji:"🍌"},
+  {key:"パイナップル", emoji:"🍍"}, {key:"りんご", emoji:"🍎"}, {key:"もも", emoji:"🍑"}, {key:"さくらんぼ", emoji:"🍒"}, {key:"いちご", emoji:"🍓"},
+  {key:"ピーマン", emoji:"🫑"}, {key:"トマト", emoji:"🍅"}, {key:"アボカド", emoji:"🥑"}, {key:"なす", emoji:"🍆"}, {key:"じゃがいも", emoji:"🥔"},
+  {key:"にんじん", emoji:"🥕"}, {key:"とうもろこし", emoji:"🌽"}, {key:"とうがらし", emoji:"🌶️"}, {key:"ブロッコリー", emoji:"🥦"}, {key:"たまねぎ", emoji:"🧅"},
+  {key:"パン", emoji:"🍞"}, {key:"チーズ", emoji:"🧀"}, {key:"ハンバーガー", emoji:"🍔"}, {key:"ピザ", emoji:"🍕"}, {key:"ホットドッグ", emoji:"🌭"},
+  {key:"せんべい", emoji:"🍘"}, {key:"おにぎり", emoji:"🍙"}, {key:"たまご", emoji:"🥚"}, {key:"ポップコーン", emoji:"🍿"},
+  {key:"ごはん", emoji:"🍚"}, {key:"カレーライス", emoji:"🍛"}, {key:"おでん", emoji:"🍢"}, {key:"すし", emoji:"🍣"}, {key:"だんご", emoji:"🍡"},
+  {key:"ソフトクリーム", emoji:"🍦"}, {key:"ドーナツ", emoji:"🍩"}, {key:"ケーキ", emoji:"🍰"}, {key:"チョコレート", emoji:"🍫"}, {key:"プリン", emoji:"🍮"},
+  {key:"キャンディ", emoji:"🍭"}, {key:"ビール", emoji:"🍺"}, {key:"はし", emoji:"🥢"}, {key:"コーヒー", emoji:"☕"}, {key:"スプーン", emoji:"🥄"},
+  {key:"ほうちょう", emoji:"🔪"}, {key:"さる", emoji:"🐒"}, {key:"いぬ", emoji:"🐶"}, {key:"ねこ", emoji:"🐱"}, {key:"ライオン", emoji:"🦁"},
+  {key:"とら", emoji:"🐯"}, {key:"うま", emoji:"🐴"}, {key:"うし", emoji:"🐮"}, {key:"ぶた", emoji:"🐷"}, {key:"きりん", emoji:"🦒"},
+  {key:"ぞう", emoji:"🐘"}, {key:"ねずみ", emoji:"🐁"}, {key:"うさぎ", emoji:"🐇"}, {key:"くま", emoji:"🐻"}, {key:"パンダ", emoji:"🐼"},
+  {key:"にわとり", emoji:"🐓"}, {key:"ペンギン", emoji:"🐧"}, {key:"ふくろう", emoji:"🦉"}, {key:"フラミンゴ", emoji:"🦩"}, {key:"さかな", emoji:"🐟"},
+  {key:"かに", emoji:"🦀"}, {key:"えび", emoji:"🦐"}, {key:"ちょう", emoji:"🦋"}, {key:"てんとうむし", emoji:"🐞"}, {key:"さくら", emoji:"🌸"},
+  {key:"ひまわり", emoji:"🌻"}, {key:"チューリップ", emoji:"🌷"}, {key:"さぼてん", emoji:"🌵"}, {key:"きのこ", emoji:"🍄"},
+  {key:"サッカーボール", emoji:"⚽"}, {key:"やきゅうボール", emoji:"⚾"}, {key:"バスケットボール", emoji:"🏀"}, {key:"アメリカンフットボール", emoji:"🏈"},
+  {key:"テニスボール", emoji:"🎾"}, {key:"ボウリング", emoji:"🎳"}, {key:"たっきゅう", emoji:"🏓"}, {key:"さいころ", emoji:"🎲"},
+  {key:"めがね", emoji:"👓"}, {key:"てぶくろ", emoji:"🧤"}, {key:"くつした", emoji:"🧦"}, {key:"ぼうし", emoji:"🧢"}, {key:"ゆびわ", emoji:"💍"},
+  {key:"すず", emoji:"🔔"}, {key:"マイク", emoji:"🎤"}, {key:"ラジオ", emoji:"📻"}, {key:"でんわ", emoji:"☎️"}, {key:"そろばん", emoji:"🧮"},
+  {key:"テレビ", emoji:"📺"}, {key:"かめら", emoji:"📷"}, {key:"ろうそく", emoji:"🕯️"}, {key:"でんきゅう", emoji:"💡"}, {key:"えんぴつ", emoji:"✏️"},
+  {key:"じょうぎ", emoji:"📏"}, {key:"かぎ", emoji:"🔑"}, {key:"ごみばこ", emoji:"🗑️"}
+];
+
+/* ============ レイアウト・モード定義 ============ */
+const LAYOUTS = [
+  { id:"vert2", label:"縦2つ", count:2, type:"vertical" },
+  { id:"horiz2", label:"横2つ", count:2, type:"grid", cols:2 },
+  { id:"vert3", label:"縦3つ", count:3, type:"vertical" },
+  { id:"tri3", label:"三角形に3つ", count:3, type:"triangle" },
+  { id:"vert4", label:"縦4つ", count:4, type:"vertical" },
+  { id:"grid2x2", label:"2×2(4択)", count:4, type:"grid", cols:2 },
+  { id:"grid3x2", label:"3×2(6択)", count:6, type:"grid", cols:3 },
+  { id:"grid3x3", label:"3×3(9択)", count:9, type:"grid", cols:3 },
+  { id:"grid3x4", label:"3×4(12択)", count:12, type:"grid", cols:3 },
+];
+const MODES = [
+  { id:"every", label:"毎回(すべて入れ替え)", desc:"問題ごとに選択肢を総入れ替えします。" },
+  { id:"fixed", label:"固定(ずっと同じ選択肢)", desc:"セッション中、絵と位置は変わりません。出題される単語だけが変わります。" },
+  { id:"partial", label:"正解+選択した物のみ変更", desc:"毎回、正解だった絵と(間違えた場合は)選んだ絵だけを新しい絵に差し替えます。" },
+];
+const PACE_OPTIONS = [1000, 1500, 2000, 3000, 4000, 5000];
+const COUNT_OPTIONS = [10, 20, 30, 50, 75, 100, 150];
+const SPEECH_RATE_OPTIONS = [
+  { id: "fast", label: "はやめ", rate: 0.8 },
+  { id: "normal", label: "ふつう", rate: 0.7 },
+  { id: "slow", label: "ゆっくり", rate: 0.5 },
+  { id: "veryslow", label: "とてもゆっくり", rate: 0.3 },
+];
+const STORAGE_KEY = 'takatsuki_foodanimal_flexible_sessions';
+
+/* ============ ストレージ ============ */
+async function loadSessions(){
+  try{ const res = await window.storage.get(STORAGE_KEY, false); return res ? JSON.parse(res.value) : []; }
+  catch(e){ return []; }
+}
+async function saveSession(session){
+  const list = await loadSessions();
+  list.push(session);
+  if(list.length > 100) list.shift();
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(list), false); }
+  catch(e){ console.error('save failed', e); }
+}
+
+/* ============ ユーティリティ ============ */
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function fmtDate(ts){ const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function findWord(key){ return WORDS.find(w=>w.key===key); }
+function pickDistinctKeys(n, excludeKeys){
+  excludeKeys = excludeKeys || [];
+  const candidates = WORDS.filter(w => !excludeKeys.includes(w.key));
+  return shuffle(candidates).slice(0, n).map(w=>w.key);
+}
+function iconSizeForCount(n){
+  if(n <= 3) return 72;
+  if(n <= 4) return 64;
+  if(n <= 6) return 56;
+  if(n <= 9) return 46;
+  return 38;
+}
+
+let jaVoice = null;
+function pickVoice(){ const voices = speechSynthesis.getVoices(); jaVoice = voices.find(v=>v.lang && v.lang.startsWith('ja')) || null; }
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(word){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = 'ja-JP'; if(jaVoice) u.voice = jaVoice; u.rate = settings.speechRate || 0.7;
+  speechSynthesis.speak(u);
+}
+
+/* ============ 画面: ホーム(設定) ============ */
+let settings = { layoutId: 'grid2x2', modeId: 'every', paceMs: 3000, count: 20, speechRate: 0.7 };
+
+function renderHome(){
+  const layout = LAYOUTS.find(l=>l.id===settings.layoutId);
+  const mode = MODES.find(m=>m.id===settings.modeId);
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <h1 class="title">聴覚的理解トレーニング</h1>
+    <p class="sub">レイアウト・入れ替え方式・間隔・問題数を自由に設定できます</p>
+    <div class="card">
+      <div class="setting-row">
+        <label class="field-label">提示レイアウト(選択肢の数)</label>
+        <select id="layoutSelect">
+          ${LAYOUTS.map(l=>`<option value="${l.id}" ${l.id===settings.layoutId?'selected':''}>${l.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="setting-row">
+        <label class="field-label">絵の入れ替え方式</label>
+        <select id="modeSelect">
+          ${MODES.map(m=>`<option value="${m.id}" ${m.id===settings.modeId?'selected':''}>${m.label}</option>`).join('')}
+        </select>
+        <div class="setting-hint" id="modeHint">${mode.desc}</div>
+      </div>
+      <div class="setting-row">
+        <label class="field-label">提示間隔(ペース)</label>
+        <select id="paceSelect">
+          ${PACE_OPTIONS.map(ms=>`<option value="${ms}" ${ms===settings.paceMs?'selected':''}>${(ms/1000)}秒</option>`).join('')}
+        </select>
+      </div>
+      <div class="setting-row">
+        <label class="field-label">問題数</label>
+        <select id="countSelect">
+          ${COUNT_OPTIONS.map(n=>`<option value="${n}" ${n===settings.count?'selected':''}>${n}問</option>`).join('')}
+        </select>
+      </div>
+      <div class="setting-row">
+        <label class="field-label">読み上げスピード</label>
+        <select id="speechRateSelect">
+          ${SPEECH_RATE_OPTIONS.map(r=>`<option value="${r.rate}" ${r.rate===settings.speechRate?'selected':''}>${r.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <button class="primary-btn" id="startBtn" style="margin-bottom:10px;">トレーニングを始める</button>
+    <button class="ghost-btn" id="historyBtn">セッション履歴を見る</button>
+  `;
+  el.querySelector('#layoutSelect').addEventListener('change', e=> settings.layoutId = e.target.value);
+  el.querySelector('#modeSelect').addEventListener('change', e=>{
+    settings.modeId = e.target.value;
+    el.querySelector('#modeHint').textContent = MODES.find(m=>m.id===settings.modeId).desc;
+  });
+  el.querySelector('#paceSelect').addEventListener('change', e=> settings.paceMs = Number(e.target.value));
+  el.querySelector('#countSelect').addEventListener('change', e=> settings.count = Number(e.target.value));
+  el.querySelector('#speechRateSelect').addEventListener('change', e=> settings.speechRate = Number(e.target.value));
+  el.querySelector('#startBtn').addEventListener('click', startSession);
+  el.querySelector('#historyBtn').addEventListener('click', renderHistory);
+  return el;
+}
+
+/* ============ セッションエンジン ============ */
+let sessionCtx = null;
+let paceTimer = null;
+let paceStart = 0;
+
+function startSession(){
+  const layout = LAYOUTS.find(l=>l.id===settings.layoutId);
+  const mode = settings.modeId;
+  sessionCtx = {
+    layout, mode, paceMs: settings.paceMs, totalQuestions: settings.count,
+    index: 0, answers: [], startedAt: Date.now(),
+    slots: mode !== 'every' ? pickDistinctKeys(layout.count) : null
+  };
+  renderQuestion();
+}
+
+function getCurrentTrial(){
+  const layout = sessionCtx.layout;
+  if(sessionCtx.mode === 'every'){
+    const chosenKeys = pickDistinctKeys(layout.count);
+    const target = chosenKeys[Math.floor(Math.random()*chosenKeys.length)];
+    const options = shuffle(chosenKeys);
+    return { target, options };
+  } else {
+    const options = sessionCtx.slots.slice();
+    const target = options[Math.floor(Math.random()*options.length)];
+    return { target, options };
+  }
+}
+
+function updateSlotsAfterAnswer(target, selected){
+  if(sessionCtx.mode !== 'partial') return;
+  const slots = sessionCtx.slots;
+  const targetIdx = slots.indexOf(target);
+  const usedExclude = slots.slice();
+  if(targetIdx !== -1){
+    const replacement = pickDistinctKeys(1, usedExclude)[0];
+    if(replacement){ slots[targetIdx] = replacement; usedExclude.push(replacement); }
+  }
+  if(selected && selected !== target){
+    const selectedIdx = slots.indexOf(selected);
+    if(selectedIdx !== -1 && selectedIdx !== targetIdx){
+      const replacement2 = pickDistinctKeys(1, usedExclude)[0];
+      if(replacement2){ slots[selectedIdx] = replacement2; }
+    }
+  }
+}
+
+function renderQuestion(){
+  const trial = getCurrentTrial();
+  sessionCtx.currentTrial = trial;
+  const layout = sessionCtx.layout;
+  const size = iconSizeForCount(layout.count);
+  const el = document.createElement('div');
+
+  let optionsHtml = '';
+  if(layout.type === 'vertical'){
+    optionsHtml = `<div class="options-vertical" id="optionsGrid">
+      ${trial.options.map(key => `
+        <div class="opt-card" data-key="${key}">
+          <div class="opt-icon">${iconHtml(key, findWord(key).emoji, size)}</div>
+        </div>`).join('')}
+    </div>`;
+  } else if(layout.type === 'triangle'){
+    optionsHtml = `<div class="options-triangle" id="optionsGrid">
+      <div class="tri-row-top">
+        <div class="opt-card" data-key="${trial.options[0]}">
+          <div class="opt-icon">${iconHtml(trial.options[0], findWord(trial.options[0]).emoji, size)}</div>
+        </div>
+      </div>
+      <div class="tri-row-bottom">
+        <div class="opt-card" data-key="${trial.options[1]}">
+          <div class="opt-icon">${iconHtml(trial.options[1], findWord(trial.options[1]).emoji, size)}</div>
+        </div>
+        <div class="opt-card" data-key="${trial.options[2]}">
+          <div class="opt-icon">${iconHtml(trial.options[2], findWord(trial.options[2]).emoji, size)}</div>
+        </div>
+      </div>
+    </div>`;
+  } else if(layout.type === 'grid'){
+    optionsHtml = `<div class="options-grid" id="optionsGrid" style="grid-template-columns:repeat(${layout.cols}, 1fr);">
+      ${trial.options.map(key => `
+        <div class="opt-card" data-key="${key}">
+          <div class="opt-icon">${iconHtml(key, findWord(key).emoji, size)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="progress-head"><span class="q-count">問題 ${sessionCtx.index+1} / ${sessionCtx.totalQuestions}</span></div>
+    <div class="pace-track"><div class="pace-fill" id="paceFill"></div></div>
+    <div class="speak-row">
+      <button class="speak-icon" id="replaySpeak">🔊</button>
+      <span class="speak-hint">読み上げを聞いてタップ</span>
+    </div>
+    ${optionsHtml}
+    <div class="selected-hint" id="selHint">&nbsp;</div>
+    <div class="exit-row">
+      <button class="pause-btn" id="pauseBtn">一時停止</button>
+      <button class="link-btn" id="exitBtn">中断する</button>
+    </div>
+  `;
+
+  let answered = null;
+  let isPaused = false;
+  el.querySelectorAll('.opt-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      if(answered || isPaused) return;
+      answered = card.dataset.key;
+      card.classList.add('selected');
+      el.querySelector('#selHint').textContent = '回答しました';
+    });
+  });
+  el.querySelector('#replaySpeak').addEventListener('click', ()=>{ if(!isPaused) speak(trial.target); });
+  el.querySelector('#exitBtn').addEventListener('click', ()=>{ clearInterval(paceTimer); finishSession(true); });
+
+  renderInto(el);
+  setTimeout(()=> speak(trial.target), 100);
+
+  const fill = el.querySelector('#paceFill');
+  const pauseBtn = el.querySelector('#pauseBtn');
+  let elapsedBeforePause = 0;
+  paceStart = Date.now();
+  clearInterval(paceTimer);
+
+  function tick(){
+    const elapsed = elapsedBeforePause + (Date.now() - paceStart);
+    const ratio = Math.max(0, 1 - elapsed / sessionCtx.paceMs);
+    fill.style.width = (ratio*100) + '%';
+    if(elapsed >= sessionCtx.paceMs){
+      clearInterval(paceTimer);
+      sessionCtx.answers.push({ target: trial.target, options: trial.options, selected: answered });
+      updateSlotsAfterAnswer(trial.target, answered);
+      sessionCtx.index += 1;
+      if(sessionCtx.index >= sessionCtx.totalQuestions) finishSession(false);
+      else renderQuestion();
+    }
+  }
+  paceTimer = setInterval(tick, 40);
+
+  pauseBtn.addEventListener('click', ()=>{
+    if(!isPaused){
+      isPaused = true;
+      elapsedBeforePause = elapsedBeforePause + (Date.now() - paceStart);
+      clearInterval(paceTimer);
+      if('speechSynthesis' in window) speechSynthesis.pause();
+      pauseBtn.textContent = '再開する';
+      pauseBtn.classList.add('is-paused');
+    } else {
+      isPaused = false;
+      paceStart = Date.now();
+      if('speechSynthesis' in window) speechSynthesis.resume();
+      paceTimer = setInterval(tick, 40);
+      pauseBtn.textContent = '一時停止';
+      pauseBtn.classList.remove('is-paused');
+    }
+  });
+}
+
+async function finishSession(interrupted){
+  clearInterval(paceTimer);
+  const answers = sessionCtx.answers;
+  const correctCount = answers.filter(a=>a.selected === a.target).length;
+  const total = answers.length;
+  const accuracy = total > 0 ? Math.round((correctCount/total)*1000)/10 : 0;
+  const session = {
+    id: Date.now(), timestamp: sessionCtx.startedAt, total, correctCount, accuracy, interrupted,
+    layoutLabel: sessionCtx.layout.label, modeId: sessionCtx.mode, paceMs: sessionCtx.paceMs, answers
+  };
+  if(total > 0) await saveSession(session);
+  renderInto(renderResult(session));
+}
+
+/* ============ 結果画面 ============ */
+function renderResult(session){
+  const noResponse = session.answers.filter(a=>!a.selected).length;
+  const modeLabel = MODES.find(m=>m.id===session.modeId)?.label || '';
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <h1 class="title">結果</h1>
+    <p class="sub">${fmtDate(session.timestamp)} &middot; ${session.layoutLabel} &middot; ${modeLabel}${session.interrupted ? '(途中で中断)' : ''}</p>
+    <div class="card">
+      <div class="result-hero"><div class="result-big">${session.correctCount} / ${session.total}</div><div class="result-sub">正解</div></div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="v">${session.accuracy}%</div><div class="l">正答率</div></div>
+        <div class="stat-box"><div class="v">${noResponse}</div><div class="l">無回答</div></div>
+      </div>
+    </div>
+    <button class="primary-btn" id="reviewBtn" style="margin-bottom:10px;">1問ずつ確認する</button>
+    <button class="ghost-btn" id="retryBtn">もう一度(同じ設定)</button>
+    <button class="ghost-btn" id="homeBtn">設定に戻る</button>
+  `;
+  el.querySelector('#reviewBtn').addEventListener('click', ()=> renderInto(renderReview(session)));
+  el.querySelector('#retryBtn').addEventListener('click', startSession);
+  el.querySelector('#homeBtn').addEventListener('click', render);
+  return el;
+}
+
+/* ============ 確認(レビュー)画面 ============ */
+function renderReview(session){
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <div class="top-nav"><button class="back-btn" id="back">&larr; 結果に戻る</button></div>
+    <h1 class="title">1問ずつ確認</h1>
+    <p class="sub">正解: ${session.correctCount} / ${session.total}</p>
+    <div class="review-filter">
+      <button data-f="all" class="active">すべて</button>
+      <button data-f="ng">不正解のみ</button>
+      <button data-f="none">無回答のみ</button>
+    </div>
+    <div class="card" id="reviewList"></div>
+    <button class="ghost-btn" id="homeBtn">設定に戻る</button>
+  `;
+  el.querySelector('#back').addEventListener('click', ()=> renderInto(renderResult(session)));
+  el.querySelector('#homeBtn').addEventListener('click', render);
+
+  function renderList(filter){
+    const list = el.querySelector('#reviewList');
+    list.innerHTML = '';
+    session.answers.forEach((a, i)=>{
+      const isCorrect = a.selected === a.target;
+      const hasAnswer = !!a.selected;
+      if(filter === 'ng' && (isCorrect || !hasAnswer)) return;
+      if(filter === 'none' && hasAnswer) return;
+      const row = document.createElement('div');
+      row.className = 'review-row';
+      row.innerHTML = `
+        <div class="review-num">${i+1}</div>
+        <div class="review-icons">
+          <div class="review-icon-box correct">${findWord(a.target).emoji}</div>
+          ${(!isCorrect && hasAnswer) ? `<div class="review-icon-box wrong">${findWord(a.selected).emoji}</div>` : ''}
+        </div>
+        <div class="review-body">
+          <div class="review-target">正解: ${a.target}</div>
+          <div class="review-status ${!hasAnswer ? 'none' : (isCorrect ? 'ok':'ng')}">
+            ${!hasAnswer ? '無回答' : (isCorrect ? '正解' : `不正解(選択: ${a.selected})`)}
+          </div>
+        </div>
+        <button class="replay-btn" data-word="${a.target}">🔊</button>
+      `;
+      row.querySelector('.replay-btn').addEventListener('click', (e)=> speak(e.target.dataset.word));
+      list.appendChild(row);
+    });
+    if(list.children.length === 0) list.innerHTML = '<div class="empty-hint">該当する問題はありません</div>';
+  }
+  el.querySelectorAll('.review-filter button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      el.querySelectorAll('.review-filter button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList(btn.dataset.f);
+    });
+  });
+  renderList('all');
+  return el;
+}
+
+/* ============ 履歴画面 ============ */
+async function renderHistory(){
+  const sessions = (await loadSessions()).slice().reverse();
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <div class="top-nav"><button class="back-btn" id="back">&larr; 戻る</button></div>
+    <h1 class="title">セッション履歴</h1>
+    <p class="sub">正答率(%)の推移</p>
+    <div class="card"><canvas id="trendCanvas"></canvas></div>
+    <div class="card" id="listCard">
+      ${sessions.length === 0 ? '<div class="empty-hint">まだ記録がありません</div>' :
+        sessions.map(s => `
+          <div class="hist-row">
+            <div>
+              <div style="font-weight:700;">${s.correctCount} / ${s.total} 正解${s.interrupted ? '(中断)' : ''}</div>
+              <div class="hist-date">${fmtDate(s.timestamp)} &middot; ${s.layoutLabel} &middot; ${(s.paceMs/1000)}秒</div>
+            </div>
+            <div class="hist-metric"><b>${s.accuracy}%</b></div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+  el.querySelector('#back').addEventListener('click', render);
+  renderInto(el);
+  const canvas = el.querySelector('#trendCanvas');
+  requestAnimationFrame(()=> drawTrend(canvas, sessions.slice().reverse().slice(-15)));
+}
+
+function drawTrend(canvas, sessions){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width || 480, h = 140;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,w,h);
+  if(sessions.length === 0){ ctx.fillStyle = '#5B6B70'; ctx.font = '13px sans-serif'; ctx.fillText('データがまだありません', 10, h/2); return; }
+  const maxV = 100;
+  const padL=8, padR=8, padT=10, padB=20;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+  const barW = Math.min(28, plotW/sessions.length - 8);
+  const gap = (plotW - barW*sessions.length)/(sessions.length+1);
+  sessions.forEach((s,i)=>{
+    const x = padL + gap*(i+1) + barW*i;
+    const barH = (s.accuracy/maxV)*plotH;
+    const y = padT + (plotH-barH);
+    ctx.fillStyle = '#3B6E71';
+    ctx.beginPath();
+    const r=4;
+    ctx.moveTo(x,y+barH); ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    ctx.lineTo(x+barW-r,y); ctx.arcTo(x+barW,y,x+barW,y+r,r);
+    ctx.lineTo(x+barW,y+barH); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#263238'; ctx.font = '11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(s.accuracy+'%', x+barW/2, (y-4<10?10:y-4));
+  });
+}
+
+/* ============ ルーティング ============ */
+function renderInto(node){ const wrap = document.getElementById('wrap'); wrap.innerHTML = ''; wrap.appendChild(node); }
+function render(){ renderInto(renderHome()); }
+render();
+</script>
+</body>
+</html>
