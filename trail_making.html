@@ -34,7 +34,7 @@
   }
   .app{
     width:100%;
-    max-width:820px;
+    max-width:1200px;
     display:flex;
     flex-direction:column;
     min-height:100vh;
@@ -168,9 +168,10 @@
     background:var(--white);
     border-radius:20px;
     box-shadow:0 4px 16px rgba(30,41,59,0.08);
-    flex:1;
-    min-height:420px;
-    height:min(62vh,560px);
+    flex:none;
+    min-height:380px;
+    height:calc(100vh - 230px);
+    height:calc(100dvh - 230px);
     overflow:hidden;
     touch-action:manipulation;
   }
@@ -463,21 +464,23 @@
     var W = rect.width;
     var H = rect.height;
 
-    var cols = Math.max(1, Math.ceil(Math.sqrt(n * (W / H))));
-    var rows = Math.max(1, Math.ceil(n / cols));
+    // 画面サイズ（デバイス）と刺激数から、円が最大になる行×列の組み合わせを探す
+    var cols = 1, rows = n, bestCell = 0;
+    for (var c = 1; c <= n; c++) {
+      var r = Math.ceil(n / c);
+      var cell = Math.min(W / c, H / r);
+      if (cell > bestCell) {
+        bestCell = cell;
+        cols = c;
+        rows = r;
+      }
+    }
 
     var cellW = W / cols;
     var cellH = H / rows;
-    var fitDiameter = Math.min(cellW, cellH) * 0.62;
-    var diameter;
-    if (n <= 30) {
-      // 10・20・30はサイズを変えない（通常サイズ固定。極端に狭い場合のみ安全のため縮小）
-      diameter = Math.min(56, fitDiameter);
-      diameter = Math.max(diameter, 30);
-    } else {
-      // 50・100は数字が重ならないよう自動的にサイズを縮小
-      diameter = Math.max(18, Math.min(56, fitDiameter));
-    }
+    // 各セル内に収まる大きさにするので、数字同士は重ならない
+    var diameter = Math.min(bestCell * 0.8, 150);
+    diameter = Math.max(diameter, 18);
 
     var cellIndices = [];
     for (var i = 0; i < cols * rows; i++) cellIndices.push(i);
@@ -507,7 +510,7 @@
       el.style.height = diameter + 'px';
       el.style.left = left + 'px';
       el.style.top = top + 'px';
-      el.style.fontSize = (diameter * 0.4) + 'px';
+      el.style.fontSize = (diameter * (num >= 100 ? 0.34 : 0.44)) + 'px';
       el.addEventListener('click', (function(num, el){
         return function(){ onCircleClick(num, el); };
       })(num, el));
