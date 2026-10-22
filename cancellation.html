@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="見落とし探し">
+<title>見落とし探し</title>
+<style>
+:root{--teal:#0f766e;--teal-d:#115e59;--teal-l:#ccfbf1;--gold:#d4a017;--gold-l:#fef3c7;--slate:#334155;--slate-l:#e2e8f0;--bg:#f1f5f9;--red:#dc2626}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--slate);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.screen{display:none;height:100dvh;flex-direction:column}
+.screen.on{display:flex}
+button{font-family:inherit;cursor:pointer}
+
+/* 設定画面 */
+#setup{overflow-y:auto;padding:20px 20px 40px;max-width:900px;margin:0 auto;width:100%;display:none}
+#setup.on{display:block}
+h1{margin:0 0 4px;font-size:28px;color:var(--teal-d)}
+.sub{margin:0 0 18px;color:#64748b;font-size:15px}
+.group{background:#fff;border-radius:16px;padding:6px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.group h2{font-size:15px;margin:12px 0 2px;color:var(--teal);letter-spacing:.05em}
+.row{padding:10px 0;border-bottom:1px solid var(--slate-l)}
+.row:last-child{border-bottom:none}
+.row .lab{font-weight:700;font-size:16px;margin-bottom:6px}
+.row .hint{font-size:13px;color:#64748b;margin-top:5px;font-weight:400}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{min-height:48px;min-width:64px;padding:8px 16px;font-size:17px;border:2px solid var(--slate-l);background:#fff;color:var(--slate);border-radius:12px}
+.seg button.sel{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+.startbar{display:flex;gap:12px;margin-top:6px}
+.big{flex:1;min-height:68px;font-size:24px;font-weight:800;border:none;border-radius:16px;background:var(--gold);color:#3b2f00}
+.big.sec{background:#fff;border:2px solid var(--slate-l);color:var(--slate);font-weight:700;font-size:18px;flex:0 0 auto;padding:0 22px}
+#hist{display:none;background:#fff;border-radius:16px;padding:12px 16px;margin-top:14px;font-size:14px;overflow-x:auto}
+#hist table{border-collapse:collapse;width:100%;min-width:520px}
+#hist th,#hist td{padding:6px 8px;border-bottom:1px solid var(--slate-l);text-align:left;white-space:nowrap}
+
+/* 課題画面 */
+#play{background:var(--bg)}
+.top{display:flex;align-items:center;gap:14px;padding:8px 14px;background:var(--slate);color:#fff;min-height:64px}
+.top .tgt{display:flex;align-items:center;gap:10px;font-size:15px}
+.top .tgt b{display:inline-flex;align-items:center;justify-content:center;min-width:48px;height:48px;padding:0 8px;background:var(--gold);color:#3b2f00;border-radius:10px;font-size:34px;line-height:1}
+.top .sp{flex:1}
+.top .stat{font-size:20px;font-variant-numeric:tabular-nums;min-width:90px;text-align:center}
+.top .end{min-height:48px;padding:0 20px;font-size:17px;font-weight:700;border:none;border-radius:12px;background:#fff;color:var(--slate)}
+#stage{position:relative;flex:1;background:#fff;overflow:hidden;touch-action:manipulation}
+.it{position:absolute;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);line-height:1;color:#1e293b;border-radius:50%;border:3px solid transparent;font-weight:500}
+.it.hit{border-color:var(--teal);background:rgba(15,118,110,.18)}
+.it.bad{border-color:var(--red);background:rgba(220,38,38,.18)}
+#guide{position:absolute;top:0;bottom:0;width:8px;background:var(--red);opacity:.85;display:none;z-index:2}
+#shade{position:absolute;top:0;bottom:0;background:rgba(148,163,184,.14);pointer-events:none}
+#ready{position:absolute;inset:0;background:rgba(255,255,255,.96);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:20px}
+#ready .msg{font-size:24px;font-weight:700}
+#ready .glyphs{display:flex;gap:18px}
+#ready .glyphs b{display:inline-flex;align-items:center;justify-content:center;min-width:130px;height:130px;font-size:90px;line-height:1;background:var(--gold-l);border:4px solid var(--gold);border-radius:24px;padding:0 10px}
+#ready button{min-height:72px;padding:0 56px;font-size:26px;font-weight:800;border:none;border-radius:18px;background:var(--teal);color:#fff}
+
+/* 結果画面 */
+#result{overflow-y:auto;padding:20px 20px 40px;max-width:900px;margin:0 auto;width:100%;display:none}
+#result.on{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.card{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card .k{font-size:13px;color:#64748b}
+.card .v{font-size:30px;font-weight:800;color:var(--teal-d);font-variant-numeric:tabular-nums}
+.card .v small{font-size:15px;font-weight:600;color:#64748b}
+.card.warn .v{color:var(--red)}
+.panel{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.panel h3{margin:0 0 10px;font-size:16px;color:var(--teal)}
+.lr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cell{border-radius:12px;padding:10px;text-align:center;background:var(--slate-l)}
+.cell .p{font-size:26px;font-weight:800}
+.cell .n{font-size:13px;color:#475569}
+.note{font-size:13px;color:#64748b;margin:8px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+svg{width:100%;height:auto;display:block;background:#f8fafc;border:1px solid var(--slate-l);border-radius:10px}
+</style>
+</head>
+<body>
+
+<!-- 設定 -->
+<div id="setup" class="screen on">
+  <h1>見落とし探し</h1>
+  <p class="sub">たくさんの中から、指定されたものをすべてタップします（キャンセレーション課題）</p>
+  <div id="settings"></div>
+  <div class="startbar">
+    <button class="big sec" id="btnHist">履歴</button>
+    <button class="big" id="btnStart">スタート</button>
+  </div>
+  <div id="hist"></div>
+</div>
+
+<!-- 課題 -->
+<div id="play" class="screen">
+  <div class="top">
+    <div class="tgt"><span>さがす：</span><span id="tgtGlyphs"></span></div>
+    <div class="sp"></div>
+    <div class="stat" id="found">0 / 0</div>
+    <div class="stat" id="timer">0:00</div>
+    <button class="end" id="btnEnd">おわり</button>
+  </div>
+  <div id="stage">
+    <div id="shade"></div>
+    <div id="guide"></div>
+    <div id="ready">
+      <div class="msg">この記号を すべてタップしてください</div>
+      <div class="glyphs" id="readyGlyphs"></div>
+      <button id="btnGo">はじめる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 結果 -->
+<div id="result" class="screen">
+  <h1>けっか</h1>
+  <p class="sub" id="reason"></p>
+  <div class="cards" id="cards"></div>
+  <div class="panel">
+    <h3>左右別の見つけた割合</h3>
+    <div class="lr" id="lr"></div>
+  </div>
+  <div class="panel">
+    <h3>4つの領域別の見つけた割合</h3>
+    <div class="quad" id="quad"></div>
+    <p class="note">探索範囲の中心を基準に、左上・右上・左下・右下に分けています。</p>
+  </div>
+  <div class="panel">
+    <h3>画面上の分布</h3>
+    <div id="map"></div>
+    <div class="legend">
+      <span><i style="background:#0f766e"></i>見つけた標的</span>
+      <span><i style="background:#dc2626"></i>見落とした標的</span>
+      <span><i style="background:#d4a017"></i>誤タップ</span>
+      <span><i style="background:#cbd5e1"></i>妨害刺激</span>
+    </div>
+  </div>
+  <div class="startbar">
+    <button class="big sec" id="btnBack">設定にもどる</button>
+    <button class="big" id="btnAgain">もう一度</button>
+  </div>
+</div>
+
+<script>
+/* ===== 刺激セット：t=標的、low/mid/high=類似度別の妨害刺激 ===== */
+const POOL = {
+  sym: [
+    {t:'○', low:['△','□','☆','◇','＋'], mid:['□','◇','●','△'], high:['◎','◉','●','⊙']},
+    {t:'□', low:['○','△','☆','◇','＋'], mid:['◇','○','▽','▣'], high:['▣','▢','▤','▥']},
+    {t:'△', low:['○','□','☆','＋','×'], mid:['▽','□','◇','▲'], high:['▲','▽','▷','◁']},
+    {t:'☆', low:['○','□','△','◇'], mid:['★','◇','△','＋'], high:['★','✩','✦','✧']}
+  ],
+  hira: [
+    {t:'ぬ', low:['あ','ほ','る','ま','す'], mid:['ね','る','ゆ','ろ'], high:['め','ね','ゆ','わ']},
+    {t:'め', low:['あ','す','ほ','く','ま'], mid:['ゆ','る','ろ','ね'], high:['ぬ','ね','わ','れ']},
+    {t:'わ', low:['あ','す','ほ','く'], mid:['ね','ろ','る','ゆ'], high:['れ','ね','ぬ','め']},
+    {t:'は', low:['あ','す','く','ま'], mid:['ほ','い','た','ま'], high:['ほ','ま','け','に']}
+  ],
+  kata: [
+    {t:'シ', low:['ア','ホ','ク','マ','ヲ'], mid:['ミ','ト','ヲ','キ'], high:['ツ','ソ','ン','ミ']},
+    {t:'ソ', low:['ア','ホ','ク','マ'], mid:['リ','ト','ヲ','ス'], high:['ン','シ','ツ','リ']},
+    {t:'ウ', low:['ア','ホ','ク','マ'], mid:['フ','ヲ','ラ','ス'], high:['ワ','フ','ヲ','ク']}
+  ],
+  num: [
+    {t:'6', low:['2','3','4','7'], mid:['1','2','5','9'], high:['9','8','0','5']},
+    {t:'3', low:['1','4','6','7'], mid:['2','0','5','9'], high:['8','5','2','9']},
+    {t:'7', low:['2','3','5','6'], mid:['1','4','2','9'], high:['1','9','4','2']}
+  ]
+};
+
+/* ===== 設定項目 ===== */
+const SCHEMA = [
+  {group:'刺激', items:[
+    {key:'type',label:'刺激の種類',opts:[['sym','記号'],['hira','ひらがな'],['kata','カタカナ'],['num','数字']]},
+    {key:'kinds',label:'標的の種類数',opts:[[1,'1種類'],[2,'2種類']]},
+    {key:'targets',label:'標的の数',opts:[[5,'5'],[10,'10'],[15,'15'],[20,'20'],[30,'30'],[40,'40']]},
+    {key:'distractors',label:'妨害刺激の数',opts:[[10,'10'],[20,'20'],[40,'40'],[60,'60'],[100,'100'],[150,'150']]},
+    {key:'sim',label:'標的と妨害刺激の類似度',opts:[['low','低'],['mid','中'],['high','高']],
+      hint:'低＝形がはっきり違う　高＝よく似ていて見分けにくい'},
+    {key:'size',label:'文字の大きさ',opts:[['s','小'],['m','中'],['l','大'],['xl','特大']]}
+  ]},
+  {group:'配置', items:[
+    {key:'layout',label:'配置の規則性',opts:[['grid','整列（格子）'],['jitter','ゆらぎ（少しずれ）'],['random','ランダム']],
+      hint:'整列は走査の方略を立てやすく、ランダムは立てにくくなります'},
+    {key:'range',label:'探索範囲（左右）',opts:[['full','全体'],['left','左半分'],['right','右半分'],['center','中央']]},
+    {key:'bias',label:'標的の左右の偏り',opts:[['even','均等'],['left','左に多め'],['right','右に多め']],
+      hint:'「多め」は標的の約75%がその側に入ります'},
+    {key:'guide',label:'左端ガイド線（赤い線）',opts:[[0,'なし'],[1,'あり']],
+      hint:'探索範囲の左端に赤い線を表示し、左側への注意の手がかりにします'}
+  ]},
+  {group:'進行', items:[
+    {key:'limit',label:'制限時間',opts:[[0,'なし'],[30,'30秒'],[60,'60秒'],[120,'2分'],[180,'3分']]},
+    {key:'feedback',label:'まちがいタップの表示',opts:[[1,'あり'],[0,'なし']],
+      hint:'「あり」は妨害刺激をタップすると赤く光ります'}
+  ]}
+];
+const DEFAULTS = {type:'sym',kinds:1,targets:10,distractors:40,sim:'mid',size:'m',
+  layout:'random',range:'full',bias:'even',guide:0,limit:0,feedback:1};
+const FS = {s:34,m:50,l:68,xl:90};
+const RANGE = {full:[0,1],left:[0,.5],right:[.5,1],center:[.25,.75]};
+const NAME = {
+  type:{sym:'記号',hira:'ひらがな',kata:'カタカナ',num:'数字'},
+  sim:{low:'低',mid:'中',high:'高'},
+  layout:{grid:'整列',jitter:'ゆらぎ',random:'ランダム'},
+  range:{full:'全体',left:'左半分',right:'右半分',center:'中央'},
+  bias:{even:'均等',left:'左多め',right:'右多め'}
+};
+
+let cfg = Object.assign({}, DEFAULTS);
+try { const s = JSON.parse(localStorage.getItem('cancel_cfg')||'null'); if (s) cfg = Object.assign(cfg, s); } catch(e){}
+const $ = id => document.getElementById(id);
+
+/* ===== 設定画面 ===== */
+function renderSettings(){
+  const box = $('settings'); box.innerHTML = '';
+  SCHEMA.forEach(g=>{
+    const grp = document.createElement('div'); grp.className = 'group';
+    grp.innerHTML = `<h2>${g.group}</h2>`;
+    g.items.forEach(it=>{
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = `<div class="lab">${it.label}</div>`;
+      const seg = document.createElement('div'); seg.className = 'seg';
+      it.opts.forEach(([v,l])=>{
+        const b = document.createElement('button');
+        b.textContent = l;
+        if (String(cfg[it.key]) === String(v)) b.classList.add('sel');
+        b.onclick = ()=>{ cfg[it.key] = v; saveCfg(); renderSettings(); };
+        seg.appendChild(b);
+      });
+      row.appendChild(seg);
+      if (it.hint){ const h = document.createElement('div'); h.className = 'hint'; h.textContent = it.hint; row.appendChild(h); }
+      grp.appendChild(row);
+    });
+    box.appendChild(grp);
+  });
+}
+function saveCfg(){ try{ localStorage.setItem('cancel_cfg', JSON.stringify(cfg)); }catch(e){} }
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on');
+  if (id==='setup'||id==='result') window.scrollTo(0,0);
+}
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+/* ===== 配置の生成 ===== */
+function rangeRect(W,H,r){ const m = RANGE[r]; return {x0:W*m[0], x1:W*m[1], y0:0, y1:H}; }
+
+function poisson(n,x0,y0,rw,rh,d){
+  const pts = [], d2 = d*d; let tries = 0;
+  while (pts.length < n && tries < n*80){
+    tries++;
+    const x = x0 + Math.random()*rw, y = y0 + Math.random()*rh;
+    if (pts.every(p => (p.x-x)*(p.x-x)+(p.y-y)*(p.y-y) >= d2)) pts.push({x,y});
+  }
+  return pts.length === n ? pts : null;
+}
+
+function place(n, rect, fs0, layout){
+  let fs = fs0;
+  while (fs >= 22){
+    const pad = fs*0.9;
+    const x0 = rect.x0+pad, x1 = rect.x1-pad, y0 = rect.y0+pad, y1 = rect.y1-pad;
+    const rw = x1-x0, rh = y1-y0;
+    if (rw > 0 && rh > 0){
+      let pts = null;
+      if (layout === 'random'){
+        pts = poisson(n,x0,y0,rw,rh,fs*1.45) || poisson(n,x0,y0,rw,rh,fs*1.2);
+      } else {
+        const want = Math.max(n, Math.ceil(n*1.12));
+        let cols = Math.max(1, Math.round(Math.sqrt(want*rw/rh)));
+        let rows = Math.ceil(want/cols);
+        while (cols*rows < n) rows++;
+        const cw = rw/cols, ch = rh/rows;
+        if (cw >= fs*1.3 && ch >= fs*1.3){
+          const cells = [];
+          for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) cells.push({r,c});
+          shuffle(cells);
+          const amp = layout === 'jitter' ? Math.max(0, Math.min((Math.min(cw,ch)-fs*1.25)/2, Math.min(cw,ch)*0.3)) : 0;
+          pts = cells.slice(0,n).map(({r,c})=>({
+            x: x0+(c+.5)*cw + (Math.random()*2-1)*amp,
+            y: y0+(r+.5)*ch + (Math.random()*2-1)*amp
+          }));
+        }
+      }
+      if (pts) return {pts, fs};
+    }
+    fs *= 0.92;
+  }
+  return null;
+}
+
+/* ===== セッション ===== */
+let S = null;      // 現在の試行
+let timerId = null;
+
+function build(){
+  const stage = $('stage');
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const rect = rangeRect(W,H,cfg.range);
+  let T = cfg.targets, D = cfg.distractors, note = '';
+  let res = null;
+  while (!res){
+    res = place(T+D, rect, FS[cfg.size], cfg.layout);
+    if (!res){
+      if (D > 0){ D = Math.floor(D*0.85); note = '画面に入りきらないため、妨害刺激の数を自動的に減らしました。'; }
+      else if (T > 1){ T--; note = '画面に入りきらないため、標的の数を自動的に減らしました。'; }
+      else break;
+    }
+  }
+  if (!res) res = {pts:[{x:W/2,y:H/2}], fs:FS[cfg.size]}, T = 1, D = 0;
+  const {pts, fs} = res;
+  const n = T + D;
+  shuffle(pts);
+
+  /* 標的と妨害の文字 */
+  const groups = shuffle(POOL[cfg.type].slice()).slice(0, cfg.kinds);
+  const tChars = groups.map(g=>g.t);
+  let dPool = [...new Set(groups.flatMap(g=>g[cfg.sim]))].filter(c=>!tChars.includes(c));
+  if (!dPool.length) dPool = [...new Set(groups.flatMap(g=>g.low))].filter(c=>!tChars.includes(c));
+
+  /* 標的の位置（左右の偏り） */
+  const midX = (rect.x0+rect.x1)/2, midY = (rect.y0+rect.y1)/2;
+  const L = [], R = [];
+  pts.forEach((p,i)=> (p.x < midX ? L : R).push(i));
+  const ratioL = {even:.5,left:.75,right:.25}[cfg.bias];
+  let nL = Math.round(T*ratioL);
+  nL = Math.max(T-R.length, Math.min(nL, L.length, T));
+  nL = Math.max(0, nL);
+  const nR = T - nL;
+  const tIdx = new Set([...shuffle(L.slice()).slice(0,nL), ...shuffle(R.slice()).slice(0,nR)]);
+  /* 足りない分は残りから補う */
+  if (tIdx.size < T){
+    const rest = shuffle(pts.map((_,i)=>i).filter(i=>!tIdx.has(i)));
+    while (tIdx.size < T && rest.length) tIdx.add(rest.pop());
+  }
+  const kindOrder = shuffle(Array.from({length:tIdx.size},(_,i)=>tChars[i % tChars.length]));
+  let ki = 0;
+
+  const items = pts.map((p,i)=>{
+    const isT = tIdx.has(i);
+    return {x:p.x, y:p.y, isT, ch: isT ? kindOrder[ki++] : dPool[Math.floor(Math.random()*dPool.length)],
+            found:false, wrong:false, tHit:null};
+  });
+  return {W,H,rect,midX,midY,fs,items,T:tIdx.size,D:n-tIdx.size,tChars,note,
+          t0:0,running:false,ended:false,falseTaps:0,hits:0,reason:''};
+}
+
+function startTrial(){
+  show('play');
+  const stage = $('stage');
+  stage.querySelectorAll('.it').forEach(e=>e.remove());
+  $('ready').style.display = 'flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    S = build();
+    /* 探索範囲の表示 */
+    const shade = $('shade');
+    if (cfg.range === 'full'){ shade.style.display = 'none'; }
+    else { shade.style.display='block'; shade.style.left = S.rect.x0+'px'; shade.style.width = (S.rect.x1-S.rect.x0)+'px'; }
+    const g = $('guide');
+    if (cfg.guide){ g.style.display='block'; g.style.left = S.rect.x0+'px'; } else g.style.display='none';
+    const gl = S.tChars.map(c=>`<b>${c}</b>`).join('');
+    $('tgtGlyphs').innerHTML = gl; $('readyGlyphs').innerHTML = gl;
+    $('found').textContent = `0 / ${S.T}`;
+    $('timer').textContent = cfg.limit ? fmt(cfg.limit*1000) : '0:00';
+    const frag = document.createDocumentFragment();
+    S.items.forEach((it,i)=>{
+      const d = document.createElement('div');
+      d.className = 'it'; d.dataset.i = i; d.textContent = it.ch;
+      const box = S.fs*1.2;
+      d.style.cssText = `left:${it.x}px;top:${it.y}px;width:${box}px;height:${box}px;font-size:${S.fs}px`;
+      it.el = d; frag.appendChild(d);
+    });
+    stage.appendChild(frag);
+  }));
+}
+
+function fmt(ms){ const s = Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+function begin(){
+  if (!S || S.running) return;
+  $('ready').style.display = 'none';
+  S.running = true; S.t0 = performance.now();
+  timerId = setInterval(tick, 200);
+}
+function tick(){
+  if (!S || !S.running) return;
+  const el = performance.now() - S.t0;
+  if (cfg.limit){
+    const rem = cfg.limit*1000 - el;
+    $('timer').textContent = fmt(rem);
+    if (rem <= 0) finish('time');
+  } else $('timer').textContent = fmt(el);
+}
+
+$('stage').addEventListener('pointerdown', e=>{
+  if (!S || !S.running) return;
+  const el = e.target.closest('.it'); if (!el) return;
+  const it = S.items[+el.dataset.i];
+  if (it.isT){
+    if (it.found) return;
+    it.found = true; it.tHit = performance.now() - S.t0; S.hits++;
+    el.classList.add('hit');
+    $('found').textContent = `${S.hits} / ${S.T}`;
+    if (S.hits >= S.T) finish('all');
+  } else {
+    if (it.wrong) return;
+    it.wrong = true; S.falseTaps++;
+    if (cfg.feedback){ el.classList.add('bad'); setTimeout(()=>el.classList.remove('bad'), 500); }
+  }
+});
+
+function finish(reason){
+  if (!S || S.ended) return;
+  S.ended = true; S.running = false; clearInterval(timerId);
+  S.elapsed = performance.now() - S.t0; S.reason = reason;
+  showResult();
+}
+
+/* ===== 結果 ===== */
+const pct = (a,b)=> b ? Math.round(a/b*100) : null;
+function showResult(){
+  const s = S, items = s.items;
+  const tg = items.filter(i=>i.isT);
+  const miss = s.T - s.hits;
+  const sec = (s.elapsed/1000).toFixed(1);
+  $('reason').textContent = {all:'すべての標的を見つけました。', time:'制限時間になりました。', end:'途中で終了しました。'}[s.reason]
+    + (s.note ? ' ' + s.note : '');
+  $('cards').innerHTML = `
+    <div class="card"><div class="k">見つけた標的</div><div class="v">${s.hits}<small> / ${s.T}（${pct(s.hits,s.T)}%）</small></div></div>
+    <div class="card ${miss?'warn':''}"><div class="k">見落とし</div><div class="v">${miss}<small> 個</small></div></div>
+    <div class="card ${s.falseTaps?'warn':''}"><div class="k">まちがいタップ</div><div class="v">${s.falseTaps}<small> 回</small></div></div>
+    <div class="card"><div class="k">かかった時間</div><div class="v">${sec}<small> 秒</small></div></div>`;
+
+  const cellHTML = (label,a,b,cls)=>{
+    const p = pct(a,b);
+    const bg = p===null ? '#f1f5f9' : p>=90 ? '#ccfbf1' : p>=60 ? '#fef3c7' : '#fee2e2';
+    return `<div class="cell" style="background:${bg}"><div class="n">${label}</div><div class="p">${p===null?'―':p+'%'}</div><div class="n">${b?a+' / '+b:'標的なし'}</div></div>`;
+  };
+  const cnt = f => { const t = tg.filter(f); return [t.filter(i=>i.found).length, t.length]; };
+  const left = cnt(i=>i.x<s.midX), right = cnt(i=>i.x>=s.midX);
+  $('lr').innerHTML = cellHTML('左側',...left) + cellHTML('右側',...right);
+  const q = (l,r)=> cnt(i=> (i.x<s.midX)===l && (i.y<s.midY)===r);
+  $('quad').innerHTML = cellHTML('左上',...q(true,true)) + cellHTML('右上',...q(false,true))
+                      + cellHTML('左下',...q(true,false)) + cellHTML('右下',...q(false,false));
+
+  /* 分布図 */
+  let svg = `<svg viewBox="0 0 ${s.W} ${s.H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<rect x="${s.rect.x0}" y="0" width="${s.rect.x1-s.rect.x0}" height="${s.H}" fill="#e2e8f0" opacity=".5"/>`;
+  svg += `<line x1="${s.midX}" y1="0" x2="${s.midX}" y2="${s.H}" stroke="#94a3b8" stroke-dasharray="8 8" stroke-width="2"/>`;
+  svg += `<line x1="${s.rect.x0}" y1="${s.midY}" x2="${s.rect.x1}" y2="${s.midY}" stroke="#94a3b8" stroke-dasharray="8 8" stroke-width="2"/>`;
+  const r = s.fs*0.5;
+  items.forEach(i=>{
+    if (!i.isT && !i.wrong) svg += `<circle cx="${i.x}" cy="${i.y}" r="${Math.max(4,r*0.25)}" fill="#cbd5e1"/>`;
+  });
+  items.forEach(i=>{
+    if (i.isT) svg += `<circle cx="${i.x}" cy="${i.y}" r="${r}" fill="${i.found?'#0f766e':'#dc2626'}" opacity="${i.found?.75:.9}"/>`;
+    else if (i.wrong) svg += `<circle cx="${i.x}" cy="${i.y}" r="${r}" fill="#d4a017" opacity=".85"/>`;
+  });
+  svg += '</svg>';
+  $('map').innerHTML = svg;
+
+  saveHistory(s, miss, sec);
+  show('result');
+}
+
+/* ===== 履歴 ===== */
+function saveHistory(s, miss, sec){
+  try{
+    const h = JSON.parse(localStorage.getItem('cancel_hist')||'[]');
+    h.unshift({d:new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
+      set:`${NAME.type[cfg.type]}・類似${NAME.sim[cfg.sim]}・${NAME.layout[cfg.layout]}・${NAME.range[cfg.range]}・${NAME.bias[cfg.bias]}`,
+      T:s.T, D:s.D, hit:s.hits, ft:s.falseTaps, sec:sec});
+    localStorage.setItem('cancel_hist', JSON.stringify(h.slice(0,30)));
+  }catch(e){}
+}
+function renderHistory(){
+  const box = $('hist');
+  let h = [];
+  try{ h = JSON.parse(localStorage.getItem('cancel_hist')||'[]'); }catch(e){}
+  if (!h.length){ box.innerHTML = '履歴はまだありません。'; return; }
+  box.innerHTML = '<table><tr><th>日時</th><th>設定</th><th>標的/妨害</th><th>正答</th><th>誤タップ</th><th>時間</th></tr>'
+    + h.map(r=>`<tr><td>${r.d}</td><td>${r.set}</td><td>${r.T}/${r.D}</td><td>${r.hit}/${r.T}</td><td>${r.ft}</td><td>${r.sec}秒</td></tr>`).join('')
+    + '</table>';
+}
+
+/* ===== ボタン ===== */
+$('btnStart').onclick = startTrial;
+$('btnAgain').onclick = startTrial;
+$('btnBack').onclick = ()=>show('setup');
+$('btnGo').onclick = begin;
+$('btnEnd').onclick = ()=>{ if (S && S.running) finish('end'); else { clearInterval(timerId); show('setup'); } };
+$('btnHist').onclick = ()=>{
+  const box = $('hist');
+  if (box.style.display === 'block'){ box.style.display = 'none'; return; }
+  renderHistory(); box.style.display = 'block';
+  box.scrollIntoView({behavior:'smooth'});
+};
+renderSettings();
+</script>
+</body>
+</html>
