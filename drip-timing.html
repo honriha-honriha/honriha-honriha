@@ -12,7 +12,9 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic","Meiryo",sans-serif;}
 body{min-height:100vh;display:flex;justify-content:center}
-#app{width:100%;max-width:1000px;padding:16px}
+body.playing{height:100vh;height:100dvh;min-height:0;overflow:auto}
+#app{width:100%;max-width:1100px;padding:16px}
+body.playing #app{padding:10px;height:100%}
 h1{margin:8px 0 4px;font-size:28px;color:var(--accent)}
 .sub{color:var(--sub);margin:0 0 16px;line-height:1.7}
 .card{background:var(--panel);border:2px solid var(--edge);border-radius:16px;padding:18px;margin-bottom:14px}
@@ -30,53 +32,57 @@ select,input[type=number]{font-size:18px;padding:8px;border-radius:8px;border:2p
 ul.rules{margin:0;padding-left:1.3em;line-height:1.9;font-size:17px}
 .dot{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.35);flex:0 0 auto}
 
-/* game */
-.hud{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
-.hud .stat{background:var(--panel);border:2px solid var(--edge);border-radius:12px;padding:8px 14px;font-size:18px}
+/* game(1画面に収める) */
+#game{display:flex;flex-direction:column;gap:8px;height:100%}
+.hud{display:flex;gap:10px;align-items:center;justify-content:space-between;flex:0 0 auto}
+.hud .stat{background:var(--panel);border:2px solid var(--edge);border-radius:12px;padding:4px 14px;font-size:18px}
 .hud b{font-size:22px}
-.hud button{font-size:16px;min-height:42px;padding:6px 14px}
-.sectitle{font-size:16px;color:var(--sub);margin:8px 0 6px}
-#orders{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;min-height:104px}
-.ticket{background:#fffdf7;border:2px solid var(--accent);border-radius:12px;padding:8px 10px;min-width:200px;flex:0 0 auto}
-.ticket .tno{font-size:14px;color:var(--sub);margin-bottom:2px}
-.drow{display:flex;align-items:center;gap:6px;margin:4px 0}
-.drow .dn{font-size:15px;font-weight:700;flex:1}
-.drow.done{opacity:.4;text-decoration:line-through}
-.chip{display:inline-block;min-width:44px;text-align:center;border-radius:999px;padding:2px 10px;font-size:18px;font-weight:700;border:2px solid var(--coffee);color:var(--coffee);background:#fff}
-.chip.L{background:var(--coffee);color:#fff}
-.bar{height:8px;background:#e6dccd;border-radius:4px;overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;width:100%;background:var(--ok)}
-.empty{color:var(--sub);padding:28px 8px}
+.hud .hint{font-size:13px;color:var(--sub)}
+.hud button{font-size:16px;min-height:40px;padding:4px 14px}
 
-#stations{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
-.station{background:var(--panel);border:2px solid var(--edge);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.station .st-title{font-weight:700;color:var(--sub)}
-.cupbox{position:relative;width:100%;height:300px;display:flex;justify-content:center;align-items:flex-end;background:linear-gradient(#f7efe2,#fff);border-radius:10px}
-.spout{position:absolute;top:0;left:50%;transform:translateX(-50%);width:44px;height:26px;background:#7b7b7b;border-radius:0 0 10px 10px}
-.stream{position:absolute;top:26px;left:50%;transform:translateX(-50%);width:8px;background:var(--coffee);display:none;border-radius:4px}
-.placeholder{position:absolute;bottom:0;width:100px;height:100px;border:3px dashed var(--edge);border-radius:0 0 18px 18px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--sub);font-size:14px;padding:4px}
-.cup{position:relative;display:none;border:4px solid #555;border-top:none;border-radius:0 0 22px 22px;background:#fffdfa;overflow:visible}
-.cup.S{width:84px}.cup.L{width:104px}
-.cup .fill{position:absolute;left:0;right:0;bottom:0;background:var(--coffee);border-radius:0 0 16px 16px}
+#orders{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;flex:0 0 auto;height:clamp(140px,26vh,210px)}
+.ticket{background:#fffdf7;border:3px solid var(--accent);border-radius:14px;padding:6px 10px 8px;flex:1 1 0;min-width:96px;max-width:290px;container-type:inline-size;display:flex;flex-direction:column}
+.ticket .tno{font-size:clamp(13px,7cqw,18px);font-weight:700;color:var(--sub)}
+.drow{display:flex;align-items:center;gap:6px;flex:1;min-height:0}
+.drow .dot{width:clamp(11px,6.5cqw,18px);height:clamp(11px,6.5cqw,18px)}
+.drow .dn{font-size:clamp(13px,9.5cqw,23px);font-weight:700;flex:1;line-height:1.15}
+.drow.done{opacity:.4;text-decoration:line-through}
+.chip{display:inline-block;min-width:clamp(30px,17cqw,48px);text-align:center;border-radius:999px;padding:0 .35em;font-size:clamp(15px,11cqw,27px);font-weight:700;border:2px solid var(--coffee);color:var(--coffee);background:#fff}
+.chip.L{background:var(--coffee);color:#fff}
+.bar{height:10px;background:#e6dccd;border-radius:5px;overflow:hidden;margin-top:4px;flex:0 0 auto}
+.bar i{display:block;height:100%;width:100%;background:var(--ok)}
+.empty{color:var(--sub);padding:28px 8px;font-size:18px}
+
+#stations{flex:1 1 0;min-height:230px;display:grid;gap:8px;grid-template-columns:repeat(var(--cols,3),1fr);grid-auto-rows:1fr}
+.station{min-height:0;background:var(--panel);border:2px solid var(--edge);border-radius:14px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.cupbox{position:relative;width:100%;flex:1 1 0;min-height:70px;display:flex;justify-content:center;align-items:flex-end;background:linear-gradient(#f7efe2,#fff);border-radius:10px;overflow:hidden}
+.badge{position:absolute;left:6px;top:6px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.spout{position:absolute;top:0;left:50%;transform:translateX(-50%);width:36px;height:20px;background:#7b7b7b;border-radius:0 0 10px 10px}
+.stream{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:7px;background:var(--coffee);display:none;border-radius:4px}
+.placeholder{position:absolute;bottom:0;width:84px;height:80px;max-height:100%;border:3px dashed var(--edge);border-radius:0 0 18px 18px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--sub);font-size:13px;padding:4px;line-height:1.3}
+.cup{position:relative;display:none;border:4px solid #555;border-top:none;border-radius:0 0 20px 20px;background:#fffdfa;overflow:visible}
+.cup.S{width:62px}.cup.L{width:80px}
+.cup .fill{position:absolute;left:0;right:0;bottom:0;background:var(--coffee);border-radius:0 0 14px 14px}
 .cup .brimzone{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(45deg,rgba(211,47,47,.18),rgba(211,47,47,.18) 6px,rgba(211,47,47,.05) 6px,rgba(211,47,47,.05) 12px)}
 .cup .mark{position:absolute;left:-10px;right:-10px;border-top:3px dashed var(--line)}
-.cup .mark span{position:absolute;left:100%;top:-12px;padding-left:4px;font-size:13px;font-weight:700;color:var(--line);white-space:nowrap}
+.cup .mark span{position:absolute;left:100%;top:-12px;padding-left:4px;font-size:12px;font-weight:700;color:var(--line);white-space:nowrap}
 .cup.spill{animation:shake .3s 2}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-.cur{min-height:24px;font-weight:700;font-size:15px;text-align:center}
-.types{display:flex;flex-direction:column;gap:6px;width:100%}
-.types button{font-size:15px;min-height:40px;padding:6px 8px;display:flex;align-items:center;gap:8px;text-align:left;line-height:1.2}
+.msg{position:absolute;left:4px;right:4px;top:30px;text-align:center;font-weight:700;font-size:15px;line-height:1.25;background:rgba(255,255,255,.9);border-radius:8px;padding:2px 4px;pointer-events:none}
+.msg:empty{display:none}
+.msg.good{color:var(--ok)}.msg.bad{color:var(--warn)}
+.cur{min-height:20px;font-weight:700;font-size:14px;line-height:1.2;text-align:center}
+.types{display:flex;flex-direction:column;gap:4px;width:100%}
+.types button{font-size:14px;min-height:34px;padding:3px 8px;display:flex;align-items:center;gap:8px;text-align:left;line-height:1.2}
 .types button.sel{background:var(--accent);color:#fff}
-.sizes{display:flex;gap:8px;width:100%}
-.sizes button{flex:1;padding:8px 0}
+.sizes{display:flex;gap:6px;width:100%}
+.sizes button{flex:1;padding:2px 0;min-height:36px;font-size:17px}
 .sizes button.sel{background:var(--accent);color:#fff}
-.act{width:100%;font-size:20px;font-weight:700;min-height:62px}
+.act{width:100%;font-size:19px;font-weight:700;min-height:46px;padding:4px}
 .act.go{background:var(--ok);border-color:var(--ok);color:#fff}
 .act.go:hover:not(:disabled){background:#236427}
 .act.stop{background:var(--warn);border-color:var(--warn);color:#fff}
 .act.stop:hover:not(:disabled){background:#a51f1f}
-.msg{min-height:26px;font-weight:700;font-size:17px;text-align:center}
-.msg.good{color:var(--ok)}.msg.bad{color:var(--warn)}
 #toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:17px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:.95}
 #pause{position:fixed;inset:0;background:rgba(251,245,234,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:26px;z-index:5}
@@ -84,6 +90,7 @@ ul.rules{margin:0;padding-left:1.3em;line-height:1.9;font-size:17px}
 .res-grid div{background:var(--soft);border-radius:12px;padding:10px;text-align:center}
 .res-grid b{display:block;font-size:26px}
 .hidden{display:none!important}
+@media (max-width:700px){.hud .hint{display:none}}
 @media (prefers-reduced-motion:reduce){.cup.spill{animation:none}}
 </style>
 </head>
@@ -144,17 +151,14 @@ ul.rules{margin:0;padding-left:1.3em;line-height:1.9;font-size:17px}
 <!-- ゲーム画面 -->
 <section id="game" class="hidden">
   <div class="hud">
-    <div class="stat">得点 <b id="score">0</b></div>
     <div class="stat">注文 <b id="prog">0</b> / <span id="total"></span></div>
-    <div class="stat">次の注文まで <b id="next">-</b></div>
+    <div class="hint">数字キー1〜4でマシンを操作できます</div>
     <div class="row">
       <button id="pauseBtn">一時停止</button>
       <button id="quitBtn">やめる</button>
     </div>
   </div>
-  <div class="sectitle">注文(古い順に対応されます)</div>
   <div id="orders"></div>
-  <div class="sectitle">マシン <span style="font-size:13px">(キーボード:数字キー1〜4で開始/停止)</span></div>
   <div id="stations"></div>
 </section>
 
@@ -182,11 +186,11 @@ const DIFF={
   hard:  {st:4,margin:1.0,interval:7}
 };
 const T={S:4.0,L:8.0};      // 適量ラインに届くまでの秒数(大は小の2倍)
-const PX=26;                // 1秒あたりのピクセル数
+let PX=26;                  // 1秒あたりのピクセル数(画面の高さに合わせて layout() が自動調整)
 const MIN_INTERVAL=2, MAX_INTERVAL=30;
 const TYPES={
   C:{name:'コーヒー',color:'#4b2e1c',fill:'#4b2e1c'},
-  M:{name:'キャラメルマキアート',color:'#c98a3d',
+  M:{name:'キャラメルマキアート',disp:'キャラメル<wbr>マキアート',color:'#c98a3d',
      fill:'linear-gradient(to top,#5a3620 0 38%,#d19a52 38% 72%,#f6e7cc 72% 100%)'},
   H:{name:'ホットチョコ',color:'#8e3f2f',
      fill:'linear-gradient(to top,#8e3f2f 0 88%,#fdf1dc 88% 100%)'}
@@ -209,7 +213,11 @@ function toast(t){
   const el=$('#toast');el.textContent=t;el.classList.add('show');
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1400);
 }
-function show(id){['start','game','result'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id));}
+function show(id){
+  ['start','game','result'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id));
+  document.body.classList.toggle('playing',id==='game');
+  if(id==='game')layout();
+}
 const szName=z=>z==='S'?'小':'大';
 
 /* ---------- スタート画面 ---------- */
@@ -240,7 +248,8 @@ function startGame(){
   buildStations();
   renderOrders();
   updateHud();
-  show('game');
+  show('game');           // 表示後に layout() でカップの大きさを画面に合わせる
+  G.last=performance.now();
   cancelAnimationFrame(raf);
   raf=requestAnimationFrame(loop);
 }
@@ -255,17 +264,17 @@ function buildStations(){
   for(let i=0;i<G.d.st;i++){
     const el=document.createElement('div');el.className='station';
     el.innerHTML=`
-      <div class="st-title">マシン ${i+1}</div>
       <div class="cupbox">
+        <div class="badge">${i+1}</div>
         <div class="spout"></div><div class="stream"></div>
         <div class="placeholder">${multi?'種類と<br>サイズを<br>えらんでね':'サイズを<br>えらんでね'}</div>
         <div class="cup"><div class="brimzone"></div><div class="fill"></div><div class="mark"><span>適量</span></div></div>
+        <div class="msg"></div>
       </div>
       <div class="cur"></div>
       ${multi?`<div class="types">${G.menu.map(t=>`<button data-t="${t}"><i class="dot" style="background:${TYPES[t].fill}"></i>${TYPES[t].name}</button>`).join('')}</div>`:''}
       <div class="sizes"><button data-s="S">小</button><button data-s="L">大</button></div>
-      <button class="act"></button>
-      <div class="msg"></div>`;
+      <button class="act"></button>`;
     box.appendChild(el);
     const s={i,el,multi,size:null,type:null,state:'idle',level:0,crossed:false,timer:0,
       cup:el.querySelector('.cup'),fill:el.querySelector('.fill'),stream:el.querySelector('.stream'),
@@ -281,6 +290,22 @@ function buildStations(){
     renderStation(s);
   }
 }
+
+/* 画面の高さに合わせて、列数とカップの縮尺(PX)を決める */
+function layout(){
+  if(!G||!G.stations.length)return;
+  const n=G.stations.length;
+  const cols=(window.innerWidth<700&&n>2)?2:n;
+  const rows=Math.ceil(n/cols);
+  $('#stations').style.setProperty('--cols',cols);
+  // 画面が低すぎる場合はつぶさず、ページをスクロールさせる(1台あたりの最低の高さ)
+  $('#stations').style.minHeight=(rows*(G.menu.length>1?330:230)+(rows-1)*8)+'px';
+  const cb=G.stations[0].el.querySelector('.cupbox');
+  const h=cb.clientHeight;
+  if(h>0)PX=Math.max(7,Math.min(30,(h-20-8)/(T.L+G.d.margin)));  // 20=注ぎ口、8=余白
+  G.stations.forEach(s=>{if(s.size)setCup(s);updateFill(s);});
+}
+window.addEventListener('resize',layout);
 
 function setCup(s){
   const m=G.d.margin;
@@ -366,13 +391,13 @@ function serve(type,size,perfect){
   o.drinks.find(d=>d.type===type&&d.size===size&&!d.done).done=true;
   let pts=perfect?3:2;
   if(perfect)G.st.perfect++;else G.st.ok++;
-  let text=perfect?'ぴったり！ +3':'OK！ +2';
+  let text=perfect?'ぴったり！':'OK！';
   beep(perfect?880:660,0.15);
   if(o.drinks.every(d=>d.done)){
-    pts+=2;G.st.done++;text+='(注文完了 +2)';
+    pts+=2;G.st.done++;text+=' 注文完了';
     G.orders=G.orders.filter(x=>x!==o);
   }
-  G.score+=pts;
+  G.score+=pts;   // 得点は画面に出さず、結果画面でだけ表示する
   renderOrders();
   return {text};
 }
@@ -398,7 +423,7 @@ function renderOrders(){
   G.orders.forEach(o=>{
     const d=document.createElement('div');d.className='ticket';d.dataset.id=o.id;
     d.innerHTML=`<div class="tno">注文 ${o.no}</div>`+
-      o.drinks.map(k=>`<div class="drow ${k.done?'done':''}"><i class="dot" style="background:${TYPES[k.type].fill}"></i><span class="dn">${TYPES[k.type].name}</span><span class="chip ${k.size}">${szName(k.size)}${k.done?' ✓':''}</span></div>`).join('')+
+      o.drinks.map(k=>`<div class="drow ${k.done?'done':''}"><i class="dot" style="background:${TYPES[k.type].fill}"></i><span class="dn">${TYPES[k.type].disp||TYPES[k.type].name}</span><span class="chip ${k.size}">${szName(k.size)}${k.done?' ✓':''}</span></div>`).join('')+
       `<div class="bar"><i></i></div>`;
     box.appendChild(d);
   });
@@ -414,9 +439,7 @@ function updBars(){
   });
 }
 function updateHud(){
-  $('#score').textContent=G.score;
   $('#prog').textContent=G.spawned;
-  $('#next').textContent=G.spawned<G.total?Math.max(0,Math.ceil(G.nextSpawn-G.t))+'秒':'-';
 }
 
 function loop(now){
