@@ -190,6 +190,10 @@ const SCHEMA = [
     {key:'guide',label:'左端ガイド線（赤い線）',opts:[[0,'なし'],[1,'あり']],
       hint:'探索範囲の左端に赤い線を表示し、左側への注意の手がかりにします'}
   ]},
+  {group:'干渉刺激（背景の模様）', items:[
+    {key:'noise',label:'干渉刺激',opts:[['none','なし'],['low','低'],['mid','中'],['high','高']],
+      hint:'低＝直線の線分のみ　中＝曲線も加わる　高＝線分と曲線が密に重なり、見つけにくくなります'}
+  ]},
   {group:'進行', items:[
     {key:'limit',label:'制限時間',opts:[[0,'なし'],[30,'30秒'],[60,'60秒'],[120,'2分'],[180,'3分']]},
     {key:'feedback',label:'まちがいタップの表示',opts:[[1,'あり'],[0,'なし']],
@@ -197,7 +201,13 @@ const SCHEMA = [
   ]}
 ];
 const DEFAULTS = {type:'sym',kinds:1,targets:10,distractors:40,sim:'mid',size:'m',
-  layout:'random',range:'full',bias:'even',guide:0,limit:0,feedback:1};
+  layout:'random',range:'full',bias:'even',guide:0,noise:'none',limit:0,feedback:1};
+/* 干渉刺激：密度(面積あたりの本数)・曲線の割合・線の濃さ・太さ・長さ */
+const NOISE = {
+  low: {dens:1/9000, curve:0,   op:.38, w:2,   len:[50,110]},
+  mid: {dens:1/6000, curve:.5,  op:.45, w:2.2, len:[60,130]},
+  high:{dens:1/1700, curve:.55, op:.55, w:2.6, len:[60,150]}
+};
 const FS = {s:34,m:50,l:68,xl:90};
 const RANGE = {full:[0,1],left:[0,.5],right:[.5,1],center:[.25,.75]};
 const NAME = {
@@ -205,8 +215,31 @@ const NAME = {
   sim:{low:'低',mid:'中',high:'高'},
   layout:{grid:'整列',jitter:'ゆらぎ',random:'ランダム'},
   range:{full:'全体',left:'左半分',right:'右半分',center:'中央'},
-  bias:{even:'均等',left:'左多め',right:'右多め'}
+  bias:{even:'均等',left:'左多め',right:'右多め'},
+  noise:{none:'干渉なし',low:'干渉低',mid:'干渉中',high:'干渉高'}
 };
+
+/* 背景の干渉刺激（SVG）を生成 */
+function noiseSVG(W,H,level){
+  const p = NOISE[level]; if (!p) return '';
+  const n = Math.round(W*H*p.dens);
+  const rnd = (a,b)=>a+Math.random()*(b-a);
+  const cols = ['#64748b','#94a3b8','#78716c'];
+  let out = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="position:absolute;left:0;top:0;pointer-events:none" fill="none" stroke-linecap="round">`;
+  for (let i=0;i<n;i++){
+    const x = rnd(0,W), y = rnd(0,H), len = rnd(p.len[0],p.len[1]), a = rnd(0,Math.PI*2);
+    const x2 = x+Math.cos(a)*len, y2 = y+Math.sin(a)*len;
+    const col = cols[i%cols.length];
+    let d;
+    if (Math.random() < p.curve){
+      const bend = rnd(.5,1.1)*len*(Math.random()<.5?-1:1);
+      const cx = (x+x2)/2 + Math.cos(a+Math.PI/2)*bend, cy = (y+y2)/2 + Math.sin(a+Math.PI/2)*bend;
+      d = `M${x.toFixed(1)} ${y.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    } else d = `M${x.toFixed(1)} ${y.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    out += `<path d="${d}" stroke="${col}" stroke-opacity="${p.op}" stroke-width="${p.w}"/>`;
+  }
+  return out + '</svg>';
+}
 
 let cfg = Object.assign({}, DEFAULTS);
 try { const s = JSON.parse(localStorage.getItem('cancel_cfg')||'null'); if (s) cfg = Object.assign(cfg, s); } catch(e){}
@@ -351,7 +384,7 @@ function build(){
 function startTrial(){
   show('play');
   const stage = $('stage');
-  stage.querySelectorAll('.it').forEach(e=>e.remove());
+  stage.querySelectorAll('.it,.noise').forEach(e=>e.remove());
   $('ready').style.display = 'flex';
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     S = build();
@@ -365,6 +398,13 @@ function startTrial(){
     $('tgtGlyphs').innerHTML = gl; $('readyGlyphs').innerHTML = gl;
     $('found').textContent = `0 / ${S.T}`;
     $('timer').textContent = cfg.limit ? fmt(cfg.limit*1000) : '0:00';
+    if (cfg.noise !== 'none'){
+      const nz = document.createElement('div');
+      nz.className = 'noise';
+      nz.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+      nz.innerHTML = noiseSVG(S.W,S.H,cfg.noise);
+      stage.insertBefore(nz, $('ready'));
+    }
     const frag = document.createDocumentFragment();
     S.items.forEach((it,i)=>{
       const d = document.createElement('div');
@@ -471,7 +511,7 @@ function saveHistory(s, miss, sec){
   try{
     const h = JSON.parse(localStorage.getItem('cancel_hist')||'[]');
     h.unshift({d:new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
-      set:`${NAME.type[cfg.type]}・類似${NAME.sim[cfg.sim]}・${NAME.layout[cfg.layout]}・${NAME.range[cfg.range]}・${NAME.bias[cfg.bias]}`,
+      set:`${NAME.type[cfg.type]}・類似${NAME.sim[cfg.sim]}・${NAME.layout[cfg.layout]}・${NAME.range[cfg.range]}・${NAME.bias[cfg.bias]}・${NAME.noise[cfg.noise]||NAME.noise.none}`,
       T:s.T, D:s.D, hit:s.hits, ft:s.falseTaps, sec:sec});
     localStorage.setItem('cancel_hist', JSON.stringify(h.slice(0,30)));
   }catch(e){}
