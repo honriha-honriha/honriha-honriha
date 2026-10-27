@@ -45,7 +45,10 @@ button.sub{background:var(--sub);font-size:15px;padding:8px 14px;width:auto;marg
   <h1>消えたドットをタッチ</h1>
   <div class="row"><label for="rows">縦の列数</label><select id="rows"><option>2</option><option>4</option><option selected>6</option><option>8</option></select></div>
   <div class="row"><label for="cols">横の列数</label><select id="cols"><option>8</option><option selected>12</option><option>16</option><option>20</option></select></div>
-  <div class="row"><label for="trials">試行回数</label><select id="trials"><option>12</option><option selected>20</option><option>40</option></select></div>
+  <div class="row"><label for="layout">ドットの配列<br><small style="color:var(--sub)">ランダムは「縦×横」の数だけ、ばらばらに配置</small></label><select id="layout"><option value="grid" selected>等間隔</option><option value="rand">ランダム</option></select></div>
+  <div class="row"><label for="trials">試行回数</label><select id="trials"><option>10</option><option selected>20</option><option>30</option><option>50</option><option>100</option></select></div>
+  <div class="row"><label for="interval">消えるまでの間隔<br><small style="color:var(--sub)">タッチしてから次のドットが消えるまで</small></label><select id="interval"><option value="0.5">0.5秒</option><option value="1">1秒</option><option value="2">2秒</option><option value="3">3秒</option><option value="4">4秒</option><option value="5">5秒</option><option value="rand" selected>ランダム（0.5・1・2・3・4・5秒）</option></select></div>
+  <div class="row"><label for="fb">正解・不正解の表示</label><select id="fb"><option value="on" selected>あり</option><option value="off">なし</option></select></div>
   <button id="start">スタート</button>
  </div>
 </div>
@@ -71,74 +74,128 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1||e.target.closes
 let lastEnd=0;document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastEnd<350&&!e.target.closest("select,button"))e.preventDefault();lastEnd=n},{passive:false});
 const $=id=>document.getElementById(id);
 const show=id=>{["setup","game","result"].forEach(s=>$(s).classList.toggle("on",s===id))};
-let R,C,N,cells,log,idx,targets,cur,timer,t0,locked,active;
+let R,C,N,IV,FB,log,idx,targets,cur,timer,fb,t0,locked,active;
 const QN={TL:"左上",TR:"右上",BL:"左下",BR:"右下"};
 
+let items=[],mode="grid";
+const PAD=8;
+function randomPoints(n,W,H){
+  let dmin=Math.sqrt(W*H/n)*0.8;
+  for(let k=0;k<80;k++){
+    const m=dmin*0.5,pts=[];
+    for(let t=0;t<4000&&pts.length<n;t++){
+      const x=m+Math.random()*Math.max(1,W-2*m),y=m+Math.random()*Math.max(1,H-2*m);
+      if(pts.every(p=>(p.x-x)**2+(p.y-y)**2>=dmin*dmin))pts.push({x,y});
+    }
+    if(pts.length===n)return {pts,d:dmin};
+    dmin*=0.95;
+  }
+  return null;
+}
 function build(){
-  const g=$("grid");g.innerHTML="";cells=[];
-  g.style.gridTemplateColumns=`repeat(${C},1fr)`;g.style.gridTemplateRows=`repeat(${R},1fr)`;
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
-    const d=document.createElement("div");d.className="cell";
-    d.innerHTML='<div class="dot"></div>';
-    d.addEventListener("pointerdown",e=>{e.preventDefault();tap(r,c)});
-    g.appendChild(d);cells.push(d);
+  const g=$("grid");g.innerHTML="";items=[];
+  if(mode==="grid"){
+    g.style.display="";g.style.position="";
+    g.style.gridTemplateColumns=`repeat(${C},1fr)`;g.style.gridTemplateRows=`repeat(${R},1fr)`;
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+      const d=document.createElement("div");d.className="cell";d.dataset.i=items.length;
+      d.innerHTML='<div class="dot"></div>';
+      g.appendChild(d);items.push({el:d,q:(r<R/2?"T":"B")+(c<C/2?"L":"R")});
+    }
+  }else{
+    g.style.display="block";g.style.position="relative";
+    g.style.gridTemplateColumns="";g.style.gridTemplateRows="";
+    const W=g.clientWidth-2*PAD,H=g.clientHeight-2*PAD;
+    const res=randomPoints(R*C,W,H);
+    if(!res){mode="grid";return build()}   /* 配置できない場合は等間隔に切り替え */
+    const size=res.d*0.95;
+    res.pts.forEach(p=>{
+      const d=document.createElement("div");d.className="cell";
+      d.style.cssText=`position:absolute;width:${size}px;height:${size}px;left:${PAD+p.x-size/2}px;top:${PAD+p.y-size/2}px`;
+      d.innerHTML='<div class="dot"></div>';
+      g.appendChild(d);items.push({el:d,x:PAD+p.x,y:PAD+p.y,q:(p.y<H/2?"T":"B")+(p.x<W/2?"L":"R")});
+    });
   }
 }
-const cell=(r,c)=>cells[r*C+c];
-function quadOf(r,c){return (r<R/2?"T":"B")+(c<C/2?"L":"R")}
+function hit(e){
+  if(mode==="grid"){const c=e.target.closest(".cell");return c?+c.dataset.i:-1}
+  const rc=$("grid").getBoundingClientRect(),x=e.clientX-rc.left,y=e.clientY-rc.top;
+  let best=-1,bd=Infinity;
+  items.forEach((it,i)=>{const d=(it.x-x)**2+(it.y-y)**2;if(d<bd){bd=d;best=i}});
+  return best;
+}
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(0,i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function makeTargets(){
-  const qs=["TL","TR","BL","BR"],list=[];
+  const qs=shuffle(["TL","TR","BL","BR"]),list=[];   /* 試行数が4の倍数でなくても、多い象限は毎回ランダム */
   for(let i=0;i<N;i++)list.push(qs[i%4]);
   shuffle(list);
-  return list.map(q=>{
-    const r0=q[0]==="T"?0:R/2,c0=q[1]==="L"?0:C/2;
-    return [rnd(r0,r0+R/2),rnd(c0,c0+C/2)];
-  });
+  const by={};items.forEach((it,i)=>(by[it.q]=by[it.q]||[]).push(i));
+  return list.map(q=>{const a=by[q]&&by[q].length?by[q]:items.map((_,i)=>i);return a[rnd(0,a.length)]});
 }
 function begin(){
-  R=+$("rows").value;C=+$("cols").value;N=+$("trials").value;
-  build();log=[];idx=0;targets=makeTargets();active=true;show("game");next();
+  R=+$("rows").value;C=+$("cols").value;N=+$("trials").value;IV=$("interval").value;FB=$("fb").value==="on";
+  mode=$("layout").value;
+  log=[];idx=0;active=true;show("game");
+  build();targets=makeTargets();next();
+}
+/* 消えるまでの間隔：タッチ（最初の1回はスタート）から次のドットが消えるまで */
+const RAND_SET=[0.5,1,2,3,4,5];   /* ランダム：この6つの間隔から毎回1つ選ぶ */
+function waitMs(){
+  return Math.round((IV==="rand"?RAND_SET[rnd(0,RAND_SET.length)]:+IV)*1000);
+}
+function resetBoard(){
+  items.forEach(it=>{it.el.className="cell";it.el.firstChild.classList.remove("gone")});
+  $("prog").textContent=`${Math.min(idx+1,N)} / ${N}`;
+}
+function schedule(){
+  locked=true;cur=null;
+  const w=waitMs();
+  timer=setTimeout(()=>{
+    cur=targets[idx];items[cur].el.firstChild.classList.add("gone");
+    t0=performance.now();locked=false;
+  },w);
+  return w;
 }
 function next(){
   if(!active)return;
-  if(idx>=N){return finish()}
-  $("prog").textContent=`${idx+1} / ${N}`;
-  locked=true;cur=null;
-  cells.forEach(c=>{c.className="cell";c.firstChild.classList.remove("gone")});
-  timer=setTimeout(()=>{
-    cur=targets[idx];cell(...cur).firstChild.classList.add("gone");
-    t0=performance.now();locked=false;
-  },rnd(2000,5001));
+  resetBoard();schedule();
 }
-function tap(r,c){
-  if(locked||!cur)return;
+function tap(i){
+  if(locked||cur===null)return;
   locked=true;
   const rt=performance.now()-t0;
-  const ok=(r===cur[0]&&c===cur[1]);
-  log.push({q:quadOf(cur[0],cur[1]),ok,rt});
-  cell(r,c).classList.add(ok?"ok":"ng");
-  if(!ok)cell(...cur).classList.add("ok");
+  const ok=(i===cur);
+  log.push({q:items[cur].q,ok,rt});
+  if(FB){
+    items[i].el.classList.add(ok?"ok":"ng");
+    if(!ok)items[cur].el.classList.add("ok");
+  }
   idx++;
-  timer=setTimeout(next,700);
+  if(idx>=N){timer=setTimeout(finish,FB?700:300);return}
+  const w=schedule();               /* 次の消失までの間隔は、今のタッチから数える */
+  if(FB){
+    /* 判定の表示は最大0.7秒。間隔が短いときは、次のドットが消える前に必ず終える */
+    fb=setTimeout(()=>{if(active)resetBoard()},Math.min(700,Math.max(0,w-150)));
+  }else resetBoard();
 }
 function finish(){
-  active=false;clearTimeout(timer);
+  active=false;clearTimeout(timer);clearTimeout(fb);
   const st={TL:[0,0],TR:[0,0],BL:[0,0],BR:[0,0]};
   let okAll=0,rtSum=0;
   log.forEach(l=>{st[l.q][1]++;if(l.ok){st[l.q][0]++;okAll++;rtSum+=l.rt}});
   const pct=(a,b)=>b?Math.round(a/b*100):"-";
   $("sum").innerHTML=`全体の正答率：<b>${pct(okAll,log.length)}%</b>（${okAll}/${log.length}）<br>`+
-   `正答時の平均反応時間：${okAll?(rtSum/okAll/1000).toFixed(2)+" 秒":"-"}<br>盤面：縦${R}列 × 横${C}列`;
+   `正答時の平均反応時間：${okAll?(rtSum/okAll/1000).toFixed(2)+" 秒":"-"}<br>ドットの配列：${mode==="rand"?"ランダム（"+R*C+"個）":"等間隔（縦"+R+"列 × 横"+C+"列）"}<br>消えるまでの間隔：${IV==="rand"?"ランダム（0.5・1・2・3・4・5秒）":IV+"秒"}<br>正解・不正解の表示：${FB?"あり":"なし"}`;
   $("quad").innerHTML=["TL","TR","BL","BR"].map(q=>
    `<div class="q"><span>${QN[q]}</span><b>${pct(...st[q])}%</b><span>${st[q][0]} / ${st[q][1]}</span></div>`).join("");
   show("result");
 }
+$("grid").addEventListener("pointerdown",e=>{e.preventDefault();const i=hit(e);if(i>=0)tap(i)});
 $("start").onclick=begin;
 $("again").onclick=()=>show("setup");
-$("stop").onclick=()=>{clearTimeout(timer);active=false;log.length?finish():show("setup")};
+$("stop").onclick=()=>{clearTimeout(timer);clearTimeout(fb);active=false;log.length?finish():show("setup")};
 })();
 </script>
 </body>
