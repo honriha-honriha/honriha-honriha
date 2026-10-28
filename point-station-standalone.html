@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ポイント・ステーション</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: slim HUD on top, one full-bleed track scene below; settings/result/pause are cards over the scene.
+   Single committed light look (clinic tablets, bright rooms): slate ink, teal controls, gold highlights. */
+:root{
+  --bg:#e4edea;
+  --ground:#d8e5e0;
+  --panel:#fbfdfc;
+  --ink:#22313a;
+  --muted:#5b6e77;
+  --line:#c2d3cd;
+  --teal:#0f7c7c;
+  --teal-dark:#0a5c5c;
+  --gold:#e0a620;
+  --bed:#8f9ca3;
+  --sleeper:#b39b7b;
+  --rail:#4f5f69;
+  --stone:#6d7c85;
+  --stone-dark:#2c3a42;
+  --bush:#cadcd5;
+  --c0:#d7403b; --c1:#2a67c9; --c2:#2f9d57; --c3:#f0b323;
+  --font:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;
+  padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;color:inherit}
+#app{height:100%;display:flex;flex-direction:column;gap:8px;padding-block:8px}
+#hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:flex;align-items:baseline;gap:6px;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:700;white-space:nowrap}
+.pill .lbl{font-size:13px;color:var(--muted);font-weight:500}
+.pill b{font-size:20px;font-variant-numeric:tabular-nums}
+#queueWrap{display:flex;align-items:center;gap:8px;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px 14px;min-height:38px}
+#queueWrap .lbl{font-size:13px;color:var(--muted);font-weight:500}
+#queue{display:flex;gap:6px}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;line-height:1;border:2px solid rgba(0,0,0,.2)}
+.spacer{flex:1}
+#progress{flex-basis:100%;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+#progress i{display:block;height:100%;width:0;background:var(--teal);transition:width .3s}
+.btn{min-height:44px;padding:8px 20px;border-radius:14px;border:2px solid var(--teal);background:var(--panel);font-weight:700;font-size:16px;cursor:pointer}
+.btn:focus-visible,.seg button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn.primary{background:var(--teal);color:#fff}
+.btn.primary:active{background:var(--teal-dark)}
+.btn.big{min-height:64px;font-size:24px;padding:12px 40px;border-radius:18px}
+.btn.quiet{border-color:var(--line);color:var(--muted)}
+.btn:disabled{opacity:.4}
+#stage{position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;background:var(--ground);border:2px solid var(--line)}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.overlay{position:absolute;inset:0;display:flex;justify-content:center;align-items:flex-start;padding:14px;overflow:auto;background:rgba(228,237,234,.9)}
+.card{margin:auto;width:100%;max-width:700px;background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:30px;font-weight:900;letter-spacing:.02em;text-wrap:balance}
+h2{margin:0;font-size:26px;font-weight:900;text-wrap:balance}
+.lead{margin:0;color:var(--muted);line-height:1.7;font-weight:500}
+.rows{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:118px 1fr;gap:6px 12px;align-items:center}
+.row .name{font-weight:700}
+.row .name small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.seg button{min-height:44px;min-width:56px;padding:6px 14px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:16px;cursor:pointer}
+.seg button[aria-checked="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.aim{margin:0;font-size:13px;color:var(--muted);text-align:center}
+details{border-top:2px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:700;min-height:32px}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile .k{font-size:13px;color:var(--muted);font-weight:500}
+.tile .v{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}
+.tile .s{font-size:13px;color:var(--muted)}
+.stlist{display:flex;flex-direction:column;gap:6px}
+.st{display:flex;align-items:center;gap:10px;font-weight:700}
+.st .dot{width:30px;height:30px;font-size:15px}
+.st .bar{flex:1;height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+.st .bar i{display:block;height:100%;background:var(--teal)}
+.st .n{min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+#toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);padding:8px 22px;border-radius:999px;background:var(--panel);border:3px solid var(--teal);font-size:22px;font-weight:900;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+#toast.show{opacity:1}
+#toast.ng{border-color:var(--gold);color:var(--ink)}
+@media (max-width:520px){
+  .row{grid-template-columns:1fr}
+  .card{padding:16px}
+  h1{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){#progress i,#toast{transition:none}}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="pill"><span class="lbl">とうちゃく</span><b id="hArr">0/0</b></div>
+    <div class="pill"><span class="lbl">せいかい</span><b id="hOk">0</b></div>
+    <div id="queueWrap" hidden><span class="lbl">つぎ</span><div id="queue"></div></div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnPause" disabled>一時停止</button>
+    <div id="progress"><i id="progressBar"></i></div>
+  </header>
+
+  <main id="stage">
+    <canvas id="cv" aria-label="線路のゲーム画面"></canvas>
+    <div id="toast" role="status"></div>
+
+    <section id="start" class="overlay">
+      <div class="card">
+        <h1>ポイント・ステーション</h1>
+        <p class="lead">トンネルから出てくる列車を、同じ色の駅へ届けましょう。分かれ道のマークをタップすると、線路の向きが切りかわります。</p>
+        <div class="rows">
+          <div class="row"><div class="name" id="lbl-stations">駅の数</div><div class="seg" id="seg-stations" role="radiogroup" aria-labelledby="lbl-stations"></div></div>
+          <div class="row"><div class="name" id="lbl-mult">列車の数<small id="totalNote"></small></div><div class="seg" id="seg-mult" role="radiogroup" aria-labelledby="lbl-mult"></div></div>
+          <div class="row"><div class="name" id="lbl-speed">列車の速さ</div><div class="seg" id="seg-speed" role="radiogroup" aria-labelledby="lbl-speed"></div></div>
+          <div class="row"><div class="name" id="lbl-interval">出発の間隔</div><div class="seg" id="seg-interval" role="radiogroup" aria-labelledby="lbl-interval"></div></div>
+          <div class="row"><div class="name" id="lbl-hint">つぎの列車</div><div class="seg" id="seg-hint" role="radiogroup" aria-labelledby="lbl-hint"></div></div>
+          <div class="row"><div class="name" id="lbl-marks">補助マーク<small>色と同じ形（駅が多いときに便利）</small></div><div class="seg" id="seg-marks" role="radiogroup" aria-labelledby="lbl-marks"></div></div>
+          <div class="row"><div class="name" id="lbl-sound">効果音</div><div class="seg" id="seg-sound" role="radiogroup" aria-labelledby="lbl-sound"></div></div>
+        </div>
+        <div class="actions"><button class="btn primary big" id="btnStart">スタート</button></div>
+        <p class="aim">ねらい：抑制（不要な切りかえをしない）・分配性注意・展望記憶</p>
+        <details id="histBox">
+          <summary>これまでの記録</summary>
+          <div class="tbl"><table><thead><tr><th>日時</th><th>駅</th><th>列車</th><th>速さ</th><th>間隔</th><th>せいかい</th><th>切りかえ</th><th>余分</th></tr></thead><tbody id="histBody"></tbody></table></div>
+          <p class="aim" id="histEmpty">まだ記録がありません。</p>
+          <div class="actions"><button class="btn quiet" id="btnClearHist">記録を消す</button></div>
+        </details>
+      </div>
+    </section>
+
+    <section id="pauseOv" class="overlay" hidden>
+      <div class="card" style="max-width:420px;text-align:center">
+        <h2>一時停止中</h2>
+        <div class="actions"><button class="btn primary big" id="btnResume">つづける</button></div>
+        <div class="actions"><button class="btn quiet" id="btnAbort">おわって設定にもどる</button></div>
+      </div>
+    </section>
+
+    <section id="result" class="overlay" hidden>
+      <div class="card">
+        <h2 id="resTitle">おつかれさまでした</h2>
+        <p class="lead" id="resMsg"></p>
+        <div class="tiles">
+          <div class="tile"><span class="k">正しい駅に到着</span><span class="v" id="resOk">0</span><span class="s" id="resOkS"></span></div>
+          <div class="tile"><span class="k">切りかえ回数</span><span class="v" id="resTaps">0</span><span class="s" id="resTapsS"></span></div>
+          <div class="tile"><span class="k">余分な切りかえ</span><span class="v" id="resExtra">0</span><span class="s">少ないほど抑制が効いています</span></div>
+        </div>
+        <div class="stlist" id="resList"></div>
+        <div class="actions">
+          <button class="btn primary big" id="btnAgain">もう一度</button>
+          <button class="btn" id="btnBack">設定にもどる</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const LW = 1000, LH = 600;
+/* first four are the most distinct; larger station counts take more from the list in order */
+const COLORS = ['#d7403b', '#2a67c9', '#2f9d57', '#f0b323', '#8e4bb8', '#f07a1c', '#17a8b8', '#e0689a', '#7a5436', '#8fc43a', '#2c3a42', '#eceff1'];
+const DARK   = COLORS.map(h => '#' + [1, 3, 5].map(i => Math.round(parseInt(h.substr(i, 2), 16) * .72).toString(16).padStart(2, '0')).join(''));
+const GLYPH  = ['●', '■', '▲', '◆', '★', '✚', '⬟', '⬢', '▼', '◎', '✖', '▬'];
+const SPEEDS = [55, 80, 115];          // layout px per second
+const SPEED_LABEL = ['ゆっくり', 'ふつう', 'はやい'];
+
+const cs = getComputedStyle(document.documentElement);
+const C = {};
+['ground','bed','sleeper','rail','teal','gold','panel','ink','stone','stone-dark','bush'].forEach(k => C[k] = cs.getPropertyValue('--' + k).trim());
+
+/* ---------- settings ---------- */
+const DEF = { stations: 3, mult: 3, speed: 1, interval: 5, hint: 1, marks: 0, sound: 1 };
+const S = Object.assign({}, DEF);
+try { const j = JSON.parse(localStorage.getItem('ps_settings') || 'null'); if (j) Object.assign(S, j); } catch (e) {}
+const SEGS = [
+  { key: 'stations', vals: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], label: v => v + '駅' },
+  { key: 'mult',     vals: [2, 3, 4],       label: v => '駅×' + v },
+  { key: 'speed',    vals: [0, 1, 2],       label: v => SPEED_LABEL[v] },
+  { key: 'interval', vals: [3, 4, 5, 6, 8], label: v => v + '秒' },
+  { key: 'hint',     vals: [1, 0],          label: v => v ? '見える' : '隠す' },
+  { key: 'marks',    vals: [0, 1],          label: v => v ? 'つける' : 'なし' },
+  { key: 'sound',    vals: [1, 0],          label: v => v ? 'あり' : 'なし' },
+];
+function saveSettings() { try { localStorage.setItem('ps_settings', JSON.stringify(S)); } catch (e) {} }
+function renderSegs() {
+  SEGS.forEach(sg => {
+    const box = $('seg-' + sg.key);
+    box.textContent = '';
+    sg.vals.forEach(v => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'seg-' + sg.key + '-' + v;
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(S[sg.key] === v));
+      b.textContent = sg.label(v);
+      b.addEventListener('click', () => {
+        S[sg.key] = v; saveSettings(); renderSegs();
+        if (sg.key === 'stations' || sg.key === 'mult') { buildWorld(); }
+        initAudio();
+      });
+      box.appendChild(b);
+    });
+  });
+  $('totalNote').textContent = '全部で ' + (S.stations * S.mult) + ' 台';
+}
+
+/* ---------- helpers ---------- */
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const canvas = $('cv'), ctx = canvas.getContext('2d');
+let rot = 0;
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function poly(n, r, a0) { for (let i = 0; i < n; i++) { const a = a0 + i * 2 * Math.PI / n; const x = Math.cos(a) * r, y = Math.sin(a) * r; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); }
+/* builds the path for mark k; caller fills it (ring uses evenodd) */
+function sym(k, r) {
+  ctx.beginPath();
+  if (k === 0) ctx.arc(0, 0, r, 0, Math.PI * 2);
+  else if (k === 1) ctx.rect(-r, -r, 2 * r, 2 * r);
+  else if (k === 2) poly(3, r * 1.25, -Math.PI / 2);
+  else if (k === 3) poly(4, r * 1.3, -Math.PI / 2);
+  else if (k === 4) { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr_ = i % 2 ? r * .5 : r * 1.3; const x = Math.cos(a) * rr_, y = Math.sin(a) * rr_; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); }
+  else if (k === 5) { const w = r * .4, L = r * 1.2; ctx.moveTo(-w, -L); ctx.lineTo(w, -L); ctx.lineTo(w, -w); ctx.lineTo(L, -w); ctx.lineTo(L, w); ctx.lineTo(w, w); ctx.lineTo(w, L); ctx.lineTo(-w, L); ctx.lineTo(-w, w); ctx.lineTo(-L, w); ctx.lineTo(-L, -w); ctx.lineTo(-w, -w); ctx.closePath(); }
+  else if (k === 6) poly(5, r * 1.2, -Math.PI / 2);
+  else if (k === 7) poly(6, r * 1.2, 0);
+  else if (k === 8) poly(3, r * 1.25, Math.PI / 2);
+  else if (k === 9) { ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.moveTo(r * .5, 0); ctx.arc(0, 0, r * .5, 0, Math.PI * 2, true); }
+  else if (k === 10) { const w = r * .38, L = r * 1.2; ctx.save(); ctx.rotate(Math.PI / 4); ctx.moveTo(-w, -L); ctx.lineTo(w, -L); ctx.lineTo(w, -w); ctx.lineTo(L, -w); ctx.lineTo(L, w); ctx.lineTo(w, w); ctx.lineTo(w, L); ctx.lineTo(-w, L); ctx.lineTo(-w, w); ctx.lineTo(-L, w); ctx.lineTo(-L, -w); ctx.lineTo(-w, -w); ctx.closePath(); ctx.restore(); }
+  else { ctx.rect(-r * 1.4, -r * .5, r * 2.8, r); }
+}
+function markInk(c) { return (c === 3 || c === 9 || c === 11) ? '#22313a' : '#fff'; }
+function fillSym(k, r, color) { sym(k, r); ctx.fillStyle = color; ctx.fill('evenodd'); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.stroke(); }
+
+/* ---------- track geometry ---------- */
+function mkEdge(p, q) {
+  let pts = [];
+  if (Math.abs(p.y - q.y) < 1) pts = [[p.x, p.y], [q.x, q.y]];
+  else {
+    const dx = q.x - p.x, n = 44;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, m = 1 - t;
+      const x = m*m*m*p.x + 3*m*m*t*(p.x + dx*.5) + 3*m*t*t*(q.x - dx*.5) + t*t*t*q.x;
+      const y = m*m*m*p.y + 3*m*m*t*p.y + 3*m*t*t*q.y + t*t*t*q.y;
+      pts.push([x, y]);
+    }
+  }
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
+  const offA = [], offB = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i-1)], b = pts[Math.min(pts.length-1, i+1)];
+    let tx = b[0]-a[0], ty = b[1]-a[1]; const L = Math.hypot(tx, ty) || 1; tx /= L; ty /= L;
+    offA.push([pts[i][0] - ty*7, pts[i][1] + tx*7]);
+    offB.push([pts[i][0] + ty*7, pts[i][1] - tx*7]);
+  }
+  return { pts, cum, len: cum[cum.length-1], offA, offB, lit: false, from: null, to: null };
+}
+function pointAt(e, d) {
+  d = Math.max(0, Math.min(e.len, d));
+  let i = 1; while (i < e.cum.length - 1 && e.cum[i] < d) i++;
+  const a = e.pts[i-1], b = e.pts[i];
+  const seg = e.cum[i] - e.cum[i-1] || 1, f = (d - e.cum[i-1]) / seg;
+  return { x: a[0] + (b[0]-a[0])*f, y: a[1] + (b[1]-a[1])*f, ang: Math.atan2(b[1]-a[1], b[0]-a[0]) };
+}
+
+let world = null;
+function buildWorld() {
+  const N = S.stations;
+  const cols = shuffle(Array.from({ length: N }, (_, i) => i));
+  const gap = Math.min(200, 520 / (N - 1));
+  const hh = Math.min(88, gap * .86);
+  const levels = Math.ceil(Math.log2(N));
+  const x0 = levels <= 1 ? 330 : levels === 2 ? 280 : 200, x1 = levels <= 1 ? 330 : levels === 2 ? 540 : 740;
+  const step = levels > 1 ? (x1 - x0) / (levels - 1) : 0;
+  const leaves = [], nodes = [], edges = [];
+  let slot = 0;
+  const link = (from, to, i) => { const e = mkEdge(from, to); e.from = from; e.to = to; from.kids[i] = e; edges.push(e); return e; };
+  function build(n, depth) {
+    if (n === 1) {
+      const l = { type: 'st', x: 880, y: 300 + (slot - (N - 1) / 2) * gap, slot, color: cols[slot], flash: null, path: [], h: hh };
+      slot++; leaves.push(l); return l;
+    }
+    const nl = Math.ceil(n / 2);
+    const a = build(nl, depth + 1), b = build(n - nl, depth + 1);
+    const node = { type: 'sw', x: x0 + step * depth, y: (a.y + b.y) / 2, state: Math.random() < .5 ? 0 : 1, kids: [], pulse: 0 };
+    nodes.push(node); link(node, a, 0); link(node, b, 1);
+    return node;
+  }
+  const root = build(N, 0);
+  const rootEdge = mkEdge({ x: 20, y: root.y }, root); rootEdge.from = null; rootEdge.to = root; edges.push(rootEdge);
+  (function dfs(edge, path) {
+    const to = edge.to;
+    if (to.type === 'st') to.path = path;
+    else to.kids.forEach((k, i) => dfs(k, path.concat([[to, i]])));
+  })(rootEdge, []);
+  world = { leaves, nodes, edges, rootEdge, particles: [], ty: root.y };
+}
+function updateLit(e, lit) {
+  e.lit = lit;
+  if (e.to.type === 'sw') e.to.kids.forEach((k, i) => updateLit(k, lit && e.to.state === i));
+}
+
+/* ---------- game ---------- */
+let game = null;
+function minFlips(order) {
+  const sim = new Map(world.nodes.map(n => [n, n.state]));
+  let c = 0;
+  order.forEach(col => {
+    const lf = world.leaves.find(l => l.color === col);
+    lf.path.forEach(([n, i]) => { if (sim.get(n) !== i) { c++; sim.set(n, i); } });
+  });
+  return c;
+}
+function startGame() {
+  buildWorld(); initAudio();
+  const total = S.stations * S.mult;
+  const order = [];
+  world.leaves.forEach(l => { for (let m = 0; m < S.mult; m++) order.push(l.color); });
+  const q = shuffle(order);
+  const stats = {}; world.leaves.forEach(l => stats[l.color] = { n: 0, ok: 0 });
+  q.forEach(c => stats[c].n++);
+  game = { state: 'play', t: 0, q, total, spawned: 0, spawnAt: 1.2, trains: [], arrived: 0, ok: 0, taps: 0, min: minFlips(q), stats, endTimer: 0 };
+  $('start').hidden = true; $('result').hidden = true; $('pauseOv').hidden = true;
+  $('btnPause').disabled = false;
+  renderQueue(); renderHud();
+}
+function spawn() {
+  const color = game.q[game.spawned++];
+  game.trains.push({ color, edge: world.rootEdge, d: 0, x: 20, y: world.ty, ang: 0 });
+  renderQueue();
+}
+function arrive(tr, leaf) {
+  const ok = tr.color === leaf.color;
+  game.arrived++; game.stats[tr.color].n; if (ok) { game.ok++; game.stats[tr.color].ok++; }
+  leaf.flash = { t: 0, ok };
+  if (ok) {
+    for (let i = 0; i < 14; i++) { const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 120; world.particles.push({ x: leaf.x + 50, y: leaf.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l: 1 }); }
+    tone(660, .14, 'sine', .14); tone(880, .2, 'sine', .14, .12);
+    toast('せいかい！', false);
+  } else {
+    tone(300, .22, 'triangle', .12); tone(240, .28, 'triangle', .1, .16);
+    toast('ちがう駅でした', true);
+  }
+  tr.done = true; renderHud();
+}
+function update(dt) {
+  if (!game || game.state !== 'play') return;
+  game.t += dt;
+  while (game.spawned < game.total && game.t >= game.spawnAt) { spawn(); game.spawnAt += S.interval; }
+  const v = SPEEDS[S.speed];
+  game.trains.forEach(tr => {
+    tr.d += v * dt;
+    while (!tr.done && tr.d >= tr.edge.len) {
+      const over = tr.d - tr.edge.len, to = tr.edge.to;
+      if (to.type === 'sw') { tr.edge = to.kids[to.state]; tr.d = over; }
+      else { arrive(tr, to); }
+    }
+    if (!tr.done) {
+      const p = pointAt(tr.edge, tr.d);
+      tr.x = p.x; tr.y = p.y;
+      let df = p.ang - tr.ang; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
+      tr.ang += df * Math.min(1, dt * 10);
+    }
+  });
+  game.trains = game.trains.filter(t => !t.done);
+  if (game.spawned >= game.total && game.trains.length === 0) {
+    game.endTimer += dt;
+    if (game.endTimer > 1.1) finish();
+  }
+}
+function finish() {
+  game.state = 'done'; $('btnPause').disabled = true;
+  const g = game, extra = Math.max(0, g.taps - g.min);
+  const pct = Math.round(g.ok / g.total * 100);
+  $('resOk').textContent = g.ok + ' / ' + g.total;
+  $('resOkS').textContent = '正答率 ' + pct + '%';
+  $('resTaps').textContent = g.taps + '回';
+  $('resTapsS').textContent = '必要な最小回数 ' + g.min + '回';
+  $('resExtra').textContent = extra + '回';
+  $('resTitle').textContent = pct >= 90 ? 'すばらしい！' : pct >= 70 ? 'よくできました' : 'おつかれさまでした';
+  $('resMsg').textContent = pct >= 90 ? '落ち着いて、タイミングよく切りかえられました。'
+    : pct >= 70 ? '多くの列車を正しく届けられました。次は切りかえの順番を意識してみましょう。'
+    : 'ゆっくり確認しながら進めることが大切です。速さや間隔を調整してもう一度どうぞ。';
+  const list = $('resList'); list.textContent = '';
+  world.leaves.forEach(l => {
+    const s = g.stats[l.color];
+    const row = document.createElement('div'); row.className = 'st';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[l.color]; dot.textContent = GLYPH[l.color];
+    const bar = document.createElement('span'); bar.className = 'bar'; const fill = document.createElement('i'); fill.style.width = (s.n ? s.ok / s.n * 100 : 0) + '%'; bar.appendChild(fill);
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = s.ok + ' / ' + s.n;
+    row.append(dot, bar, n); list.appendChild(row);
+  });
+  try {
+    const h = JSON.parse(localStorage.getItem('ps_history') || '[]');
+    h.unshift({ t: Date.now(), st: S.stations, tr: g.total, sp: S.speed, iv: S.interval, ok: g.ok, taps: g.taps, extra });
+    localStorage.setItem('ps_history', JSON.stringify(h.slice(0, 30)));
+  } catch (e) {}
+  tone(523, .15, 'sine', .12); tone(659, .15, 'sine', .12, .15); tone(784, .3, 'sine', .12, .3);
+  $('result').hidden = false;
+}
+function showStart() {
+  game = null; buildWorld();
+  $('result').hidden = true; $('pauseOv').hidden = true; $('start').hidden = false;
+  $('btnPause').disabled = true; $('queueWrap').hidden = true;
+  $('hArr').textContent = '0/0'; $('hOk').textContent = '0'; $('progressBar').style.width = '0';
+  renderHistory();
+}
+function pause() { if (game && game.state === 'play') { game.state = 'paused'; $('pauseOv').hidden = false; } }
+function resume() { if (game && game.state === 'paused') { game.state = 'play'; $('pauseOv').hidden = true; } }
+
+/* ---------- HUD / history ---------- */
+function renderHud() {
+  if (!game) return;
+  $('hArr').textContent = game.arrived + '/' + game.total;
+  $('hOk').textContent = game.ok;
+  $('progressBar').style.width = (game.arrived / game.total * 100) + '%';
+}
+function renderQueue() {
+  const wrap = $('queueWrap'), q = $('queue');
+  wrap.hidden = !(S.hint && game);
+  q.textContent = '';
+  if (!game) return;
+  game.q.slice(game.spawned, game.spawned + 4).forEach(c => {
+    const d = document.createElement('span'); d.className = 'dot'; d.style.background = COLORS[c];
+    d.textContent = S.marks ? GLYPH[c] : ''; q.appendChild(d);
+  });
+}
+function renderHistory() {
+  const body = $('histBody'); body.textContent = '';
+  let h = []; try { h = JSON.parse(localStorage.getItem('ps_history') || '[]'); } catch (e) {}
+  $('histEmpty').hidden = h.length > 0;
+  h.forEach(r => {
+    const tr = document.createElement('tr');
+    const d = new Date(r.t);
+    const cells = [d.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }), r.st + '駅', r.tr + '台', SPEED_LABEL[r.sp], r.iv + '秒', r.ok + '/' + r.tr, r.taps + '回', r.extra + '回'];
+    cells.forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+    body.appendChild(tr);
+  });
+}
+let toastTimer = 0;
+function toast(msg, ng) {
+  const t = $('toast'); t.textContent = msg; t.className = 'show' + (ng ? ' ng' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = ng ? 'ng' : ''; }, 900);
+}
+
+/* ---------- sound ---------- */
+let AC = null;
+function initAudio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {} }
+function tone(f, d, type, vol, delay) {
+  if (!S.sound || !AC) return;
+  try {
+    const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol || .1, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .03);
+  } catch (e) {}
+}
+
+/* ---------- view / input ---------- */
+const view = { s: 1, ox: 0, oy: 0, portrait: false, dpr: 1, w: 0, h: 0 };
+function resize() {
+  const r = $('stage').getBoundingClientRect();
+  const w = Math.max(1, r.width), h = Math.max(1, r.height);
+  view.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  view.w = w; view.h = h; view.portrait = w / h < 1.1;
+  const lw = view.portrait ? LH : LW, lh = view.portrait ? LW : LH;
+  view.s = Math.min(w / lw, h / lh);
+  view.ox = (w - lw * view.s) / 2; view.oy = (h - lh * view.s) / 2;
+  rot = view.portrait ? Math.PI / 2 : 0;
+  canvas.width = Math.round(w * view.dpr); canvas.height = Math.round(h * view.dpr);
+}
+function toLayout(px, py) {
+  const u = (px - view.ox) / view.s, v = (py - view.oy) / view.s;
+  return view.portrait ? { x: v, y: LH - u } : { x: u, y: v };
+}
+canvas.addEventListener('pointerdown', e => {
+  if (!game || game.state !== 'play') return;
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const p = toLayout(e.clientX - r.left, e.clientY - r.top);
+  let best = null, bd = 1e9;
+  world.nodes.forEach(n => { const d = Math.hypot(n.x - p.x, n.y - p.y); if (d < bd) { bd = d; best = n; } });
+  if (best && bd <= Math.max(64, 52 / view.s)) {
+    best.state ^= 1; best.pulse = 1; game.taps++;
+    tone(520, .06, 'square', .05); tone(390, .06, 'square', .04, .05);
+  }
+});
+
+/* ---------- drawing ---------- */
+function applyTransform() {
+  const d = view.dpr, s = view.s;
+  if (view.portrait) ctx.setTransform(0, d * s, -d * s, 0, d * (view.ox + s * LH), d * view.oy);
+  else ctx.setTransform(d * s, 0, 0, d * s, d * view.ox, d * view.oy);
+}
+function strokePts(pts) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }
+function drawEdge(e) {
+  ctx.globalAlpha = e.lit ? 1 : .45;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'butt'; ctx.setLineDash([]);
+  if (e.lit) { ctx.strokeStyle = 'rgba(15,124,124,.22)'; ctx.lineWidth = 42; strokePts(e.pts); }
+  ctx.strokeStyle = C.bed; ctx.lineWidth = 30; strokePts(e.pts);
+  ctx.strokeStyle = C.sleeper; ctx.lineWidth = 24; ctx.setLineDash([5, 11]); strokePts(e.pts); ctx.setLineDash([]);
+  ctx.strokeStyle = C.rail; ctx.lineWidth = 3.6; strokePts(e.offA); strokePts(e.offB);
+  ctx.globalAlpha = 1;
+}
+function drawBushes() {
+  ctx.fillStyle = C.bush;
+  [[120, 90, 34], [165, 75, 24], [110, 520, 36], [160, 540, 24], [700, 40, 26], [640, 570, 30], [430, 560, 22], [420, 40, 24]].forEach(b => { ctx.beginPath(); ctx.arc(b[0], b[1], b[2], 0, 7); ctx.fill(); });
+}
+function drawSwitch(n) {
+  const r = 25 + (n.pulse > 0 ? n.pulse * 5 : 0);
+  ctx.save(); ctx.translate(n.x, n.y);
+  ctx.fillStyle = C.panel; ctx.strokeStyle = C.teal; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.stroke();
+  [0, 1].forEach(i => {
+    const dir = i === 0 ? -1 : 1;
+    ctx.fillStyle = n.state === i ? C.teal : 'rgba(15,124,124,.2)';
+    ctx.beginPath(); ctx.moveTo(0, dir * 17); ctx.lineTo(-10, dir * 5); ctx.lineTo(10, dir * 5); ctx.closePath(); ctx.fill();
+  });
+  ctx.restore();
+}
+function drawTrain(t) {
+  ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.ang);
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; rr(-30, -11, 64, 30, 9); ctx.fill();
+  rr(-32, -15, 64, 30, 9); ctx.fillStyle = COLORS[t.color]; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 6;
+  for (let i = -44; i < 40; i += 14) { ctx.beginPath(); ctx.moveTo(i, -18); ctx.lineTo(i + 14, 18); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(18, -16, 16, 32);
+  ctx.restore();
+  rr(-32, -15, 64, 30, 9); ctx.lineWidth = 2.5; ctx.strokeStyle = DARK[t.color]; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; rr(21, -9, 8, 18, 3); ctx.fill();
+  ctx.fillStyle = '#fff3b8'; ctx.beginPath(); ctx.arc(32, 0, 3.4, 0, 7); ctx.fill();
+  if (S.marks) {
+    ctx.save(); ctx.translate(-5, 0); ctx.rotate(-(t.ang + rot));
+    fillSym(t.color, 8, markInk(t.color)); ctx.restore();
+  }
+  ctx.restore();
+}
+function drawPortal() {
+  ctx.save(); ctx.translate(0, world.ty - 300);
+  ctx.fillStyle = C.stone; rr(-30, 232, 114, 136, 20); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; rr(-30, 232, 114, 22, 14); ctx.fill();
+  ctx.fillStyle = C['stone-dark']; rr(52, 262, 40, 76, 16); ctx.fill();
+  ctx.fillStyle = C.stone; ctx.fillRect(-30, 232, 4, 136);
+  ctx.restore();
+}
+function drawStation(l) {
+  let sx = 0;
+  if (l.flash && !l.flash.ok && l.flash.t < .6) sx = Math.sin(l.flash.t * 42) * 5 * (1 - l.flash.t / .6);
+  const col = COLORS[l.color], dk = DARK[l.color];
+  const k = l.h / 88, kx = Math.max(.7, k);
+  ctx.fillStyle = C['stone-dark']; rr(872, l.y - 18 * k, 8, 36 * k, 3); ctx.fill();
+  ctx.save(); ctx.translate(l.x + sx, l.y); ctx.scale(kx, k);
+  rr(0, -44, 112, 88, 12); ctx.fillStyle = col; ctx.fill();
+  rr(0, -44, 112, 18, 10); ctx.fillStyle = dk; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; rr(24, -14, 26, 24, 4); ctx.fill(); rr(60, -14, 26, 24, 4); ctx.fill();
+  ctx.fillStyle = dk; rr(8, 18, 96, 6, 3); ctx.fill();
+  ctx.lineWidth = 3 / Math.min(kx, k); rr(0, -44, 112, 88, 12); ctx.strokeStyle = dk; ctx.stroke();
+  ctx.restore();
+  if (S.marks) {
+    ctx.save(); ctx.translate(l.x + 90 * kx, l.y - 35 * k + (S.stations > 6 ? 35 * k : 0)); ctx.rotate(-rot);
+    fillSym(l.color, Math.min(8, l.h * .28), markInk(l.color)); ctx.restore();
+  }
+  if (l.flash && l.flash.ok && l.flash.t < .9) {
+    const f = l.flash.t / .9;
+    ctx.strokeStyle = 'rgba(224,166,32,' + (1 - f) + ')'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(l.x + 56 * kx, l.y, 40 + f * 60, 0, 7); ctx.stroke();
+  }
+}
+function drawParticles() {
+  world.particles.forEach(p => {
+    ctx.fillStyle = 'rgba(224,166,32,' + Math.max(0, p.l) + ')';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5 * p.l + 1, 0, 7); ctx.fill();
+  });
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = C.ground; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!world) return;
+  applyTransform();
+  drawBushes();
+  updateLit(world.rootEdge, true);
+  world.edges.filter(e => !e.lit).forEach(drawEdge);
+  world.edges.filter(e => e.lit).forEach(drawEdge);
+  world.nodes.forEach(drawSwitch);
+  if (game) game.trains.forEach(drawTrain);
+  drawPortal();
+  world.leaves.forEach(drawStation);
+  drawParticles();
+}
+function fx(dt) {
+  if (!world) return;
+  world.nodes.forEach(n => { if (n.pulse > 0) n.pulse = Math.max(0, n.pulse - dt * 4); });
+  world.leaves.forEach(l => { if (l.flash) { l.flash.t += dt; if (l.flash.t > 1) l.flash = null; } });
+  world.particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .96; p.vy *= .96; p.l -= dt * 1.2; });
+  world.particles = world.particles.filter(p => p.l > 0);
+}
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt); fx(dt); draw();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- wiring ---------- */
+$('btnStart').addEventListener('click', startGame);
+$('btnAgain').addEventListener('click', startGame);
+$('btnBack').addEventListener('click', showStart);
+$('btnPause').addEventListener('click', pause);
+$('btnResume').addEventListener('click', resume);
+$('btnAbort').addEventListener('click', showStart);
+let confirmClear = false;
+$('btnClearHist').addEventListener('click', () => {
+  if (!confirmClear) { confirmClear = true; $('btnClearHist').textContent = 'もう一度押すと消えます'; setTimeout(() => { confirmClear = false; $('btnClearHist').textContent = '記録を消す'; }, 3000); return; }
+  try { localStorage.removeItem('ps_history'); } catch (e) {}
+  confirmClear = false; $('btnClearHist').textContent = '記録を消す'; renderHistory();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+if (window.ResizeObserver) new ResizeObserver(resize).observe($('stage')); else window.addEventListener('resize', resize);
+
+renderSegs(); buildWorld(); renderHistory(); resize();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
