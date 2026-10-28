@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Go/No-Go">
+<meta name="theme-color" content="#0f7c80">
+<title>Go / No-Go 課題</title>
+<style>
+:root{--teal:#0f7c80;--teal-d:#0a5c60;--teal-l:#e3f2f2;--gold:#e5a823;--gold-l:#fdf3d8;--gold-d:#7a5600;--slate:#2f3d4d;--slate-m:#64748b;--line:#d9e2e7;--bg:#f3f6f7}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--slate);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,select{-webkit-user-select:text;user-select:text;font-family:inherit}
+button{font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.view{display:none}
+.view.active{display:block}
+.wrap{max-width:780px;margin:0 auto;padding:16px 16px 48px}
+.hd{border-left:8px solid var(--teal);padding:4px 0 4px 14px;margin:6px 0 18px}
+.hd h1{margin:0;font-size:1.6rem;color:var(--teal-d)}
+.hd p{margin:4px 0 0;color:var(--slate-m);font-size:.95rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{font-size:1.1rem;margin:0 0 6px;color:var(--teal-d)}
+.lbl{font-weight:700;margin:14px 0 6px;font-size:.95rem}
+.hint{color:var(--slate-m);font-size:.82rem;margin-top:8px;line-height:1.55}
+.hint.warn{color:var(--gold-d)}
+.chips{display:flex;flex-wrap:wrap;margin:-4px}
+.chip{min-height:48px;padding:0 16px;margin:4px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:1rem;font-weight:600;color:var(--slate)}
+.chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chip:disabled{opacity:.35}
+.sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.setcard{text-align:left;border:2px solid var(--line);border-radius:14px;padding:12px;background:#fff;min-height:88px;color:var(--slate)}
+.setcard.on{border-color:var(--teal);background:var(--teal-l)}
+.setcard .ico{font-size:1.6rem;display:block;margin-bottom:2px}
+.setcard b{display:block;font-size:1rem}
+.setcard small{color:var(--slate-m);font-size:.8rem}
+.inp{width:100%;min-height:48px;border:2px solid var(--line);border-radius:12px;padding:0 12px;font-size:1rem;background:#fff;color:var(--slate)}
+.btn{min-height:56px;border-radius:14px;border:0;font-size:1.05rem;font-weight:700;padding:0 22px;background:var(--teal);color:#fff}
+.btn.gold{background:var(--gold);color:#3a2a00}
+.btn.ghost{background:#fff;color:var(--teal-d);border:2px solid var(--teal)}
+.btn.big{display:block;width:100%;min-height:66px;font-size:1.25rem;margin-top:10px}
+.btn.sm{min-height:42px;font-size:.9rem;padding:0 12px;border-radius:10px}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.btnrow .btn{width:100%}
+/* intro */
+.intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.icard{border-radius:16px;padding:14px;text-align:center;border:3px solid}
+.icard.go{background:var(--teal-l);border-color:var(--teal)}
+.icard.nogo{background:var(--gold-l);border-color:var(--gold)}
+.icard .verb{font-size:1.7rem;font-weight:800}
+.icard.go .verb{color:var(--teal-d)}
+.icard.nogo .verb{color:var(--gold-d)}
+.icard .lab{font-weight:700;margin-top:4px}
+.samp{display:flex;justify-content:center;flex-wrap:wrap;align-items:center;margin:8px 0;min-height:100px}
+.samp .stim{margin:0 6px}
+/* stimulus */
+.stim{display:flex;align-items:center;justify-content:center;width:var(--sz);height:var(--sz);flex:none;line-height:1}
+.stim .circle{width:80%;height:80%;border-radius:50%}
+.stim .square{width:72%;height:72%;border-radius:8%}
+.stim .tri{width:84%;height:80%;-webkit-clip-path:polygon(50% 0,100% 100%,0 100%);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.stim.emoji{font-size:calc(var(--sz)*.8)}
+.stim.word{width:auto;font-size:calc(var(--sz)*.34);font-weight:800;white-space:nowrap;color:var(--slate)}
+.stim.digit{font-size:calc(var(--sz)*.85);font-weight:800;color:var(--slate)}
+.stim.audio{font-size:calc(var(--sz)*.6);animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+/* task */
+#view-task{position:fixed;left:0;top:0;right:0;bottom:0;background:var(--bg);flex-direction:column;z-index:10}
+#view-task.active{display:flex}
+.topbar{display:flex;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 6px}
+.tb{min-height:44px;padding:0 14px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:700;color:var(--slate);font-size:.95rem}
+.prog{flex:1;margin:0 12px}
+.bar{height:10px;background:#e1e8ec;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);width:0;transition:width .2s}
+.count{font-weight:700;min-width:96px;text-align:right;font-size:.95rem}
+.rulebar{display:flex;justify-content:center;flex-wrap:wrap;padding:0 12px 4px}
+.rule{display:flex;align-items:center;margin:3px 6px;padding:6px 12px;border-radius:12px;font-weight:700;font-size:1rem}
+.rule.go{background:var(--teal-l);color:var(--teal-d);border:2px solid var(--teal)}
+.rule.nogo{background:var(--gold-l);color:var(--gold-d);border:2px solid var(--gold)}
+.rule .mini{--sz:34px;margin-right:8px;display:flex}
+.rule .arrow{margin:0 6px}
+.status{text-align:center;min-height:26px;font-size:.95rem;color:var(--teal-d);font-weight:700;padding:0 12px}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;margin:4px 12px;border-radius:20px;background:#fff;border:2px solid var(--line);transition:background .15s,border-color .15s}
+.stage.fb-good{background:var(--teal-l);border-color:var(--teal)}
+.stage.fb-try{background:var(--gold-l);border-color:var(--gold)}
+.fb{font-size:clamp(1.4rem,5vmin,2.6rem);font-weight:800;text-align:center;padding:0 16px;color:var(--teal-d);line-height:1.5}
+.stage.fb-try .fb{color:var(--gold-d)}
+.fix{font-size:3rem;color:#b6c2cb}
+.respwrap{padding:6px 12px max(12px,env(safe-area-inset-bottom))}
+.resp{display:block;width:100%;height:clamp(96px,20vh,160px);border-radius:22px;border:0;background:var(--teal);color:#fff;font-size:clamp(1.8rem,6vmin,3rem);font-weight:800;box-shadow:0 6px 0 var(--teal-d)}
+.resp:active{transform:translateY(4px);box-shadow:0 2px 0 var(--teal-d)}
+.taphint{text-align:center;color:var(--slate-m);font-weight:700;padding:10px 0 max(14px,env(safe-area-inset-bottom))}
+.overlay{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(243,246,247,.97);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:5}
+.overlay.show{display:flex}
+.overlay h2{font-size:1.6rem;color:var(--teal-d);margin:0 0 8px}
+.overlay p{margin:0 0 12px;color:var(--slate-m)}
+.overlay .btn{width:min(420px,100%)}
+.cd{font-size:7rem;font-weight:800;color:var(--teal-d);line-height:1.1}
+/* result */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.metric .v{font-size:1.8rem;font-weight:800;color:var(--teal-d)}
+.metric .l{font-weight:700;font-size:.9rem}
+.metric small{display:block;color:var(--slate-m);font-size:.74rem;margin-top:2px;line-height:1.4}
+.metric.gold .v{color:var(--gold-d)}
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+.tbl th,.tbl td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.tbl th{color:var(--slate-m);font-size:.78rem}
+.minibar{display:inline-block;height:10px;background:var(--teal);border-radius:5px;vertical-align:middle;margin-right:6px}
+.tblwrap{overflow-x:auto}
+.lg{display:inline-block;margin-right:14px;font-weight:700;font-size:.85rem}
+.msg{font-size:1.15rem;font-weight:700;color:var(--teal-d);margin:2px 0 10px}
+</style>
+</head>
+<body>
+
+<!-- ===== 設定 ===== -->
+<section id="view-setup" class="view active">
+ <div class="wrap">
+  <header class="hd"><h1>Go / No-Go 課題</h1><p>「押す」ものと「押さない」ものを見分けて、反応をおさえる力を鍛えます</p></header>
+
+  <div id="setupLite" style="display:none">
+   <div class="card"><h2 id="liteTitle">Go / No-Go 課題</h2><p id="liteSummary" class="hint"></p><button class="btn big" id="liteStart">はじめる</button></div>
+  </div>
+
+  <div id="setupFull">
+   <div class="card"><h2>利用者</h2><input id="userId" class="inp" placeholder="利用者ID（イニシャルなど・任意）" maxlength="20" autocomplete="off"><div class="hint">記録のグループ分けに使います。この端末のブラウザ内にだけ保存されます。</div></div>
+
+   <div class="card"><h2>1. 刺激をえらぶ</h2>
+    <div class="lbl">見る刺激</div><div id="g-setV" class="sets"></div>
+    <div class="lbl">聞く刺激</div><div id="g-setA" class="sets"></div>
+    <div class="lbl">ルールを入れ替える（押す／押さないを逆にする）</div><div id="g-swap" class="chips"></div>
+    <div class="hint" id="swapHint"></div>
+    <div class="lbl">課題中にルールを画面上部に表示</div><div id="g-showRule" class="chips"></div>
+    <div class="hint warn" id="setNote"></div>
+   </div>
+
+   <div class="card"><h2>2. 速さと数</h2>
+    <div class="lbl">刺激の提示時間（この間に反応）</div><div id="g-dur" class="chips"></div>
+    <div class="lbl">刺激と刺激の間隔</div><div id="g-isi" class="chips"></div>
+    <div class="lbl">Go : No-Go の割合</div><div id="g-nogo" class="chips"></div>
+    <div class="hint">Goが多いほど「押す」習慣が強まり、止まる（抑制する）負荷が高くなります。</div>
+    <div class="lbl">試行数</div><div id="g-n" class="chips"></div>
+    <div class="hint" id="autoNote1"></div>
+   </div>
+
+   <div class="card"><h2>3. 難易度の決め方</h2>
+    <div id="g-mode" class="chips"></div>
+    <div id="autoBox" style="display:none">
+     <div class="lbl">自動で調整する項目</div><div id="g-autoTarget" class="chips"></div>
+     <div class="lbl">開始レベル</div><div id="g-startLevel" class="chips"></div>
+     <div class="hint" id="lvDesc"></div>
+    </div>
+   </div>
+
+   <div class="card"><h2>4. 反応のしかた・フィードバック</h2>
+    <div class="lbl">反応方法</div><div id="g-resp" class="chips"></div>
+    <div class="lbl">練習</div><div id="g-practice" class="chips"></div>
+    <div class="lbl">毎回のフィードバック（はげましメッセージ）</div><div id="g-feedback" class="chips"></div>
+    <div class="lbl">正解のときの効果音</div><div id="g-sound" class="chips"></div>
+    <div class="hint">効果音は正解のときだけ鳴ります（まちがいでは鳴りません）。音声刺激のときは鳴りません。</div>
+   </div>
+
+   <button class="btn big" id="btnGo">ルールの確認へ</button>
+  </div>
+  <button class="btn ghost big" id="btnHist">記録をみる</button>
+ </div>
+</section>
+
+<!-- ===== ルール確認 ===== -->
+<section id="view-intro" class="view">
+ <div class="wrap">
+  <header class="hd"><h1>ルールのかくにん</h1><p id="introSub"></p></header>
+  <div class="card"><div id="introBody"></div></div>
+  <div class="btnrow">
+   <button class="btn ghost" id="introBack">もどる</button>
+   <button class="btn gold" id="introStart">スタート</button>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 課題 ===== -->
+<section id="view-task" class="view">
+ <div class="topbar">
+  <button class="tb" id="tPause">⏸ 休けい</button>
+  <div class="prog"><div class="bar"><i id="tBar"></i></div></div>
+  <div class="count" id="tCount"></div>
+ </div>
+ <div class="rulebar" id="tRule"></div>
+ <div class="status" id="tStatus"></div>
+ <div class="stage" id="stage"><div id="stageIn"><div class="fix">＋</div></div></div>
+ <div class="respwrap" id="respWrap"><button class="resp" id="resp">押す</button></div>
+ <div class="taphint" id="tapHint" style="display:none">画面のどこでもタップ</div>
+ <div class="overlay" id="ov"></div>
+</section>
+
+<!-- ===== 結果 ===== -->
+<section id="view-result" class="view">
+ <div class="wrap">
+  <header class="hd"><h1 id="resTitle">おつかれさまでした！</h1><p id="resSub"></p></header>
+  <div class="card"><div class="msg" id="resMsg"></div><div class="metrics" id="resMetrics"></div><div class="hint" id="resExtra"></div></div>
+  <div class="card"><h2>測定条件</h2><div id="resCond" class="hint" style="font-size:.9rem;color:var(--slate)"></div></div>
+  <div class="card"><h2>ブロックごとの推移（10試行ずつ）</h2><div class="tblwrap" id="resBlocks"></div></div>
+  <div class="hint" id="saveNote"></div>
+  <div class="btnrow">
+   <button class="btn" id="resCsv">CSVを保存</button>
+   <button class="btn ghost" id="resCopy">CSVをコピー</button>
+   <button class="btn gold" id="resAgain">もう一度（同じ設定）</button>
+   <button class="btn ghost" id="resSetup">設定にもどる</button>
+  </div>
+  <button class="btn ghost big" id="resHist">記録をみる</button>
+ </div>
+</section>
+
+<!-- ===== 記録 ===== -->
+<section id="view-history" class="view">
+ <div class="wrap">
+  <header class="hd"><h1>記録</h1><p>この端末に保存された結果です</p></header>
+  <div class="card"><div class="lbl" style="margin-top:0">利用者</div><select id="histUser" class="inp"></select></div>
+  <div class="card"><h2>推移</h2><div id="histChart"></div>
+   <div style="margin-top:6px"><span class="lg" style="color:#0f7c80">● 全体の正答率</span><span class="lg" style="color:#b7860f">● コミッションエラー率</span></div></div>
+  <div class="card"><h2>一覧</h2><div class="tblwrap" id="histList"></div></div>
+  <div class="btnrow">
+   <button class="btn" id="histCsv">一覧をCSVで保存</button>
+   <button class="btn ghost" id="histClear">記録をすべて削除</button>
+  </div>
+  <button class="btn ghost big" id="histBack">もどる</button>
+ </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= 設定ここから =================
+   PRESET に設定を入れると、設定画面を省略して「はじめる」ボタンだけの画面になります。
+   例）const PRESET = {userId:'YNSG', setId:'emoji', mode:'auto', autoTarget:'both', startLevel:2, n:30, resp:'button'};
+   使える項目：userId, setId(color/shape/emoji/word/digit/tone/speech), swap, showRule,
+   dur(ms), isi(ms または 'rand'), nogo(0.1〜0.5), n, mode(manual/auto), autoTarget(both/speed/ratio),
+   startLevel(1〜6), resp(button/screen), practice, feedback, sound */
+const PRESET = null;
+
+const BLOCK = 10;            // 自動調整・ブロック集計の単位（試行）
+const UP_TH = 0.9;           // この正答率以上でレベルアップ
+const DOWN_TH = 0.7;         // この正答率未満でレベルダウン
+const PRACTICE_N = 5;        // 練習試行数
+const SPEECH_RATE = 0.8;     // 音声刺激の読み上げ速度
+const MIN_AUDIO_DUR = 1500;  // 音声刺激の最短提示時間(ms)
+const SPEEDS = [3000,2500,2000,1500,1200,1000];       // レベル別 提示時間(ms)
+const NOGO_RATIOS = [0.5,0.4,0.3,0.25,0.2,0.1];       // レベル別 No-Go割合
+/* ================= 設定ここまで ================= */
+
+const KEY_S='gonogo.v1.settings', KEY_H='gonogo.v1.history';
+const $=id=>document.getElementById(id);
+
+/* ---------- 刺激セット ---------- */
+const FRUITS=['りんご','みかん','ぶどう','もも','いちご','すいか','ばなな','なし'];
+const ANIMALS=['いぬ','ねこ','うさぎ','くま','さる','ぶた','かえる','ぞう'];
+const SETS=[
+ {id:'color',mod:'visual',ico:'🔵',name:'色の丸',desc:'青い丸で押す・赤い丸は押さない',
+  go:{label:'青い丸',items:[{t:'color',c:'#2563eb',n:'青丸'}]},
+  nogo:{label:'赤い丸',items:[{t:'color',c:'#dc2626',n:'赤丸'}]}},
+ {id:'shape',mod:'visual',ico:'⬛',name:'かたち',desc:'丸で押す・四角／三角は押さない',
+  go:{label:'丸',items:[{t:'shape',s:'circle',n:'丸'}]},
+  nogo:{label:'四角・三角',items:[{t:'shape',s:'square',n:'四角'},{t:'shape',s:'tri',n:'三角'}]}},
+ {id:'emoji',mod:'visual',ico:'🍎',name:'絵：果物と動物',desc:'果物で押す・動物は押さない',
+  go:{label:'果物',items:['🍎','🍊','🍌','🍇','🍓','🍉','🍑','🍐'].map(e=>({t:'emoji',e:e,n:e}))},
+  nogo:{label:'動物',items:['🐶','🐱','🐰','🐻','🐼','🐵','🐷','🐸'].map(e=>({t:'emoji',e:e,n:e}))}},
+ {id:'word',mod:'visual',ico:'あ',name:'ことば：果物と動物',desc:'果物の名前で押す・動物の名前は押さない',
+  go:{label:'果物の名前',items:FRUITS.map(w=>({t:'word',w:w,n:w}))},
+  nogo:{label:'動物の名前',items:ANIMALS.map(w=>({t:'word',w:w,n:w}))}},
+ {id:'digit',mod:'visual',ico:'3',name:'数字',desc:'3以外の数字で押す・3は押さない',
+  go:{label:'3以外の数字',items:[1,2,4,5,6,7,8,9].map(d=>({t:'digit',w:String(d),n:String(d)}))},
+  nogo:{label:'3',items:[{t:'digit',w:'3',n:'3'}]}},
+ {id:'tone',mod:'audio',ico:'🔔',name:'音の高さ',desc:'高い音で押す・低い音は押さない',
+  go:{label:'高い音',items:[{t:'tone',f:1000,n:'高い音'}]},
+  nogo:{label:'低い音',items:[{t:'tone',f:400,n:'低い音'}]}},
+ {id:'speech',mod:'audio',ico:'🔊',name:'ことばを聞く：果物と動物',desc:'果物の名前で押す・動物の名前は押さない',
+  go:{label:'果物の名前',items:FRUITS.map(w=>({t:'speech',w:w,n:w}))},
+  nogo:{label:'動物の名前',items:ANIMALS.map(w=>({t:'speech',w:w,n:w}))}}
+];
+
+/* ---------- 設定の保存・選択肢 ---------- */
+const DEFAULTS={userId:'',setId:'color',swap:false,showRule:true,dur:2000,isi:1500,nogo:0.3,n:30,mode:'manual',autoTarget:'both',startLevel:3,resp:'button',practice:true,feedback:true,sound:true};
+const OPT={
+ swap:[{v:false,l:'しない'},{v:true,l:'入れ替える'}],
+ showRule:[{v:true,l:'表示する'},{v:false,l:'表示しない'}],
+ dur:[1000,1500,2000,3000,4000].map(v=>({v:v,l:(v/1000).toFixed(1)+'秒'})),
+ isi:[1000,1500,2000,3000].map(v=>({v:v,l:(v/1000).toFixed(1)+'秒'})).concat([{v:'rand',l:'ランダム（1〜3秒）'}]),
+ nogo:[{v:0.5,l:'50 : 50'},{v:0.3,l:'70 : 30'},{v:0.2,l:'80 : 20'},{v:0.1,l:'90 : 10'}],
+ n:[20,30,50,80,100].map(v=>({v:v,l:v+'回'})),
+ mode:[{v:'manual',l:'手動（固定）'},{v:'auto',l:'自動（正答率で調整）'}],
+ autoTarget:[{v:'both',l:'速さ＋割合'},{v:'speed',l:'速さだけ'},{v:'ratio',l:'割合だけ'}],
+ startLevel:[1,2,3,4,5,6].map(v=>({v:v,l:'Lv'+v})),
+ resp:[{v:'button',l:'大きなボタン'},{v:'screen',l:'画面のどこでも'}],
+ practice:[{v:true,l:'あり（'+PRACTICE_N+'回）'},{v:false,l:'なし'}],
+ feedback:[{v:true,l:'毎回出す'},{v:false,l:'出さない'}],
+ sound:[{v:true,l:'あり'},{v:false,l:'なし'}]
+};
+const store={
+ get:function(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+ set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+};
+let ST=Object.assign({},DEFAULTS,store.get(KEY_S,{}),PRESET||{});
+function saveST(){store.set(KEY_S,ST);}
+
+/* ---------- ユーティリティ ---------- */
+const pct=v=>v==null?'—':Math.round(v*100)+'%';
+const pctNum=v=>v==null?'':Math.round(v*1000)/10;
+const msTxt=v=>v==null?'—':Math.round(v)+' ms';
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const sd=a=>{if(a.length<2)return null;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)*(x-m),0)/(a.length-1));};
+const median=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),h=s.length>>1;return s.length%2?s[h]:(s[h-1]+s[h])/2;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const p2=n=>String(n).padStart(2,'0');
+const fmtDate=iso=>{const d=new Date(iso);return d.getFullYear()+'/'+p2(d.getMonth()+1)+'/'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes());};
+const fileStamp=iso=>{const d=new Date(iso);return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'_'+p2(d.getHours())+p2(d.getMinutes());};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function curSet(){return SETS.find(s=>s.id===ST.setId)||SETS[0];}
+function defs(){const s=curSet();return ST.swap?{go:s.nogo,nogo:s.go}:{go:s.go,nogo:s.nogo};}
+function ruleText(){const d=defs();return d.go.label+' → 押す ／ '+d.nogo.label+' → 押さない';}
+function lvLine(L){const r=NOGO_RATIOS[L-1];return 'Lv'+L+'：提示'+(SPEEDS[L-1]/1000).toFixed(1)+'秒・Go:No-Go '+Math.round((1-r)*100)+':'+Math.round(r*100);}
+function show(id){
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+ window.scrollTo(0,0);
+ if(id==='view-task')setStageSize();
+}
+
+/* ---------- 音 ---------- */
+let AC=null;
+function audioInit(){
+ try{const C=window.AudioContext||window.webkitAudioContext;if(C&&!AC)AC=new C();if(AC&&AC.state==='suspended')AC.resume();}catch(e){}
+ try{if('speechSynthesis' in window){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}}catch(e){}
+}
+function tone(f,dur,vol){
+ if(!AC)return;
+ try{
+  const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
+  o.type='sine';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+dur+0.05);
+ }catch(e){}
+}
+function chime(){tone(660,0.18,0.12);setTimeout(function(){tone(880,0.25,0.12);},120);}
+function stopSpeech(){try{speechSynthesis.cancel();}catch(e){}}
+function jaVoice(){try{return speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang))||null;}catch(e){return null;}}
+function speechOK(){try{return 'speechSynthesis' in window&&speechSynthesis.getVoices().some(v=>/^ja/i.test(v.lang));}catch(e){return false;}}
+function speak(text,onStart){
+ let fired=false;
+ const go=function(){if(fired)return;fired=true;onStart();};
+ try{
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='ja-JP';u.rate=SPEECH_RATE;
+  const v=jaVoice();if(v)u.voice=v;
+  u.onstart=go;
+  speechSynthesis.cancel();speechSynthesis.speak(u);
+ }catch(e){}
+ setTimeout(go,700);
+}
+function playSample(it){
+ if(it.t==='tone')tone(it.f,0.5,0.25);
+ else if(it.t==='speech')speak(it.w,function(){});
+}
+
+/* ---------- 刺激の描画 ---------- */
+function stimHTML(it){
+ switch(it.t){
+  case 'color':return '<div class="stim"><div class="circle" style="background:'+it.c+'"></div></div>';
+  case 'shape':return '<div class="stim"><div class="'+it.s+'" style="background:#475569"></div></div>';
+  case 'emoji':return '<div class="stim emoji">'+it.e+'</div>';
+  case 'word':return '<div class="stim word">'+esc(it.w)+'</div>';
+  case 'digit':return '<div class="stim digit">'+esc(it.w)+'</div>';
+  default:return '<div class="stim audio">🔊</div>';
+ }
+}
+function setStageSize(){
+ const st=$('stage');if(!st)return;
+ const sz=Math.max(80,Math.min(340,Math.min(st.clientWidth,st.clientHeight)*0.7));
+ st.style.setProperty('--sz',sz+'px');
+}
+window.addEventListener('resize',setStageSize);
+window.addEventListener('orientationchange',function(){setTimeout(setStageSize,200);});
+
+/* ================= 設定画面 ================= */
+const CHIP_KEYS=['swap','showRule','dur','isi','nogo','n','mode','autoTarget','startLevel','resp','practice','feedback','sound'];
+function chipGroup(key){
+ const c=$('g-'+key);c.innerHTML='';
+ OPT[key].forEach(function(o){
+  const b=document.createElement('button');
+  b.type='button';b.className='chip'+(ST[key]===o.v?' on':'');b.textContent=o.l;
+  b.onclick=function(){ST[key]=o.v;saveST();renderSetup();};
+  c.appendChild(b);
+ });
+}
+function setDisabled(id,dis){$(id).querySelectorAll('button').forEach(function(b){b.disabled=dis;});}
+function renderSets(){
+ ['visual','audio'].forEach(function(mod){
+  const box=$(mod==='visual'?'g-setV':'g-setA');box.innerHTML='';
+  SETS.filter(function(s){return s.mod===mod;}).forEach(function(s){
+   const b=document.createElement('button');
+   b.type='button';b.className='setcard'+(ST.setId===s.id?' on':'');
+   b.innerHTML='<span class="ico">'+s.ico+'</span><b>'+s.name+'</b><small>'+s.desc+'</small>';
+   b.onclick=function(){ST.setId=s.id;saveST();renderSetup();};
+   box.appendChild(b);
+  });
+ });
+}
+function settingText(s){
+ const isi=s.isi==='rand'?'1〜3秒ランダム':(s.isi/1000)+'秒';
+ const tgt={both:'速さ＋割合',speed:'速さ',ratio:'割合'};
+ const base=s.mode==='auto'
+  ?'自動（'+tgt[s.autoTarget]+'・開始Lv'+s.startLevel+'）'
+  :'固定（提示'+(s.dur/1000)+'秒・Go:No-Go '+Math.round((1-s.nogo)*100)+':'+Math.round(s.nogo*100)+'）';
+ return base+'／間隔'+isi+'／'+s.nPlanned+'試行';
+}
+function renderSetup(){
+ if(PRESET){
+  $('setupFull').style.display='none';$('setupLite').style.display='block';
+  $('liteSummary').textContent=curSet().name+'（'+ruleText()+'）／'+settingText({mode:ST.mode,autoTarget:ST.autoTarget,startLevel:ST.startLevel,dur:ST.dur,nogo:ST.nogo,isi:ST.isi,nPlanned:ST.n});
+  return;
+ }
+ renderSets();
+ CHIP_KEYS.forEach(chipGroup);
+ const auto=ST.mode==='auto';
+ setDisabled('g-dur',auto&&ST.autoTarget!=='ratio');
+ setDisabled('g-nogo',auto&&ST.autoTarget!=='speed');
+ $('autoBox').style.display=auto?'block':'none';
+ $('autoNote1').textContent=auto?'自動モードでは、「調整する項目」に選んだ設定は開始レベルから自動で変わります（グレーの項目）。':'';
+ $('swapHint').textContent='いまのルール：'+ruleText();
+ const s=curSet();let note='';
+ if(s.mod==='audio'){
+  note='音声刺激は音が出ます。音量を確認してください。提示時間は最短'+(MIN_AUDIO_DUR/1000)+'秒になります。';
+  if(s.id==='speech'&&!speechOK())note+=' ※この端末では日本語の読み上げ音声が確認できません。「ことば（文字）」の利用もご検討ください。';
+ }
+ $('setNote').textContent=note;
+ $('lvDesc').innerHTML='開始：<b>'+lvLine(ST.startLevel)+'</b><br>'+BLOCK+'試行ごとに正答率を確認し、'+Math.round(UP_TH*100)+'%以上でレベルアップ、'+Math.round(DOWN_TH*100)+'%未満でレベルダウンします。<br>'+SPEEDS.map(function(_,i){return lvLine(i+1);}).join('<br>');
+ $('userId').value=ST.userId;
+}
+$('userId').addEventListener('input',function(e){ST.userId=e.target.value;saveST();});
+if('speechSynthesis' in window){try{speechSynthesis.onvoiceschanged=function(){if($('view-setup').classList.contains('active'))renderSetup();};}catch(e){}}
+
+/* ================= ルール確認 ================= */
+function sampleHTML(def){
+ const s=curSet();
+ if(s.mod==='audio')return '<div class="samp" style="--sz:96px"><div class="stim audio">🔊</div></div>';
+ return '<div class="samp" style="--sz:100px">'+def.items.slice(0,3).map(stimHTML).join('')+'</div>';
+}
+function renderIntro(){
+ const s=curSet(),d=defs(),audio=s.mod==='audio';
+ $('introSub').textContent=s.name+(ST.swap?'（ルール入れ替え）':'');
+ const side=function(cls,verb,def,key){
+  return '<div class="icard '+cls+'"><div class="verb">'+verb+'</div>'+sampleHTML(def)+'<div class="lab">'+esc(def.label)+'</div>'+
+   (audio?'<button class="btn ghost sm" style="margin-top:8px" data-play="'+key+'">▶ 聞いてみる</button>':'')+'</div>';
+ };
+ $('introBody').innerHTML='<div class="intro-grid">'+side('go','押す',d.go,'go')+side('nogo','押さない',d.nogo,'nogo')+'</div>'+
+  '<p class="hint" style="font-size:.9rem">'+(audio?'音を聞いて、':'画面を見て、')+'<b>「押す」ものが出たらすぐ押し、「押さない」ものが出たらじっと我慢</b>します。'+
+  (ST.practice?'最初に練習が'+PRACTICE_N+'回あります。':'')+'本番は'+ST.n+'回です。</p>';
+ $('introBody').querySelectorAll('[data-play]').forEach(function(b){
+  b.onclick=function(){audioInit();const def=b.dataset.play==='go'?d.go:d.nogo;playSample(def.items[Math.floor(Math.random()*def.items.length)]);};
+ });
+}
+$('btnGo').onclick=function(){saveST();renderIntro();show('view-intro');};
+$('introBack').onclick=function(){show('view-setup');renderSetup();};
+$('introStart').onclick=function(){startRun();};
+$('liteStart').onclick=function(){renderIntro();show('view-intro');};
+
+/* ================= 課題の進行 ================= */
+let R=null;
+function later(fn,ms){const id=setTimeout(fn,ms);R.timers.push(id);return id;}
+function clearTimers(){if(!R)return;R.timers.forEach(clearTimeout);R.timers=[];}
+function paramsFor(level){
+ let dur=ST.dur,ratio=ST.nogo;
+ if(ST.mode==='auto'){
+  if(ST.autoTarget!=='ratio')dur=SPEEDS[level];
+  if(ST.autoTarget!=='speed')ratio=NOGO_RATIOS[level];
+ }
+ if(curSet().mod==='audio')dur=Math.max(dur,MIN_AUDIO_DUR);
+ return {dur:dur,ratio:ratio};
+}
+function isiMs(){return ST.isi==='rand'?1000+Math.round(Math.random()*20)*100:ST.isi;}
+function seqTypes(n,k,firstGo){
+ let arr=null;
+ for(let a=0;a<300;a++){
+  const t=[];for(let i=0;i<n;i++)t.push(i<k?'NoGo':'Go');
+  shuffle(t);arr=t;
+  if(firstGo&&t[0]!=='Go')continue;
+  let ok=true;
+  for(let i=2;i<n;i++){if(t[i]==='NoGo'&&t[i-1]==='NoGo'&&t[i-2]==='NoGo'){ok=false;break;}}
+  if(ok)return t;
+ }
+ return arr;
+}
+function pickItem(pool){
+ let c=pool;
+ if(pool.length>1)c=pool.filter(function(x){return x.n!==R.lastKey;});
+ const it=c[Math.floor(Math.random()*c.length)];
+ R.lastKey=it.n;return it;
+}
+function makeTrials(types,p,lvl){
+ const d=defs();
+ return types.map(function(type){
+  return {type:type,item:pickItem(type==='Go'?d.go.items:d.nogo.items),dur:p.dur,isi:isiMs(),lvl:ST.mode==='auto'?lvl+1:null};
+ });
+}
+function buildBlock(){
+ const p=paramsFor(R.level);
+ const nNo=Math.max(1,Math.round(BLOCK*p.ratio));
+ R.blockInfo={no:R.blocks.length+1,lvl:ST.mode==='auto'?R.level+1:null,dur:p.dur,ratio:nNo/BLOCK};
+ R.queue=makeTrials(seqTypes(BLOCK,nNo,R.blocks.length===0),p,R.level);
+}
+
+function startRun(){
+ audioInit();saveST();
+ R={phase:'practice',state:'idle',timers:[],timer:null,responding:false,queue:[],trials:[],blocks:[],done:0,level:ST.startLevel-1,extra:0,lastKey:null,pIdx:0,pQueue:[],curTrial:null,onset:0,blockInfo:null,token:0};
+ renderRuleBar();
+ $('respWrap').style.display=ST.resp==='button'?'block':'none';
+ $('tapHint').style.display=ST.resp==='screen'?'block':'none';
+ setStatus('');setStageFix();
+ show('view-task');
+ if(ST.practice)startPractice();else startMain();
+}
+function renderRuleBar(){
+ const bar=$('tRule');
+ if(!ST.showRule){bar.style.display='none';return;}
+ bar.style.display='flex';
+ const s=curSet(),d=defs();
+ const mini=function(def){return s.mod==='visual'&&(s.id==='color'||s.id==='shape'||s.id==='emoji')?'<span class="mini">'+stimHTML(def.items[0])+'</span>':(s.mod==='audio'?'<span class="mini" style="--sz:30px;font-size:22px;align-items:center">🔊</span>':'');};
+ bar.innerHTML='<div class="rule go">'+mini(d.go)+esc(d.go.label)+'<span class="arrow">→</span>押す</div><div class="rule nogo">'+mini(d.nogo)+esc(d.nogo.label)+'<span class="arrow">→</span>押さない</div>';
+}
+function setStatus(t){$('tStatus').textContent=t||'';}
+function setStageFix(){$('stage').className='stage';$('stageIn').innerHTML='<div class="fix">＋</div>';}
+function updateTop(){
+ if(R.phase==='practice'){
+  $('tCount').textContent='れんしゅう '+R.pIdx+'/'+PRACTICE_N;
+  $('tBar').style.width=(R.pIdx/PRACTICE_N*100)+'%';
+ }else{
+  $('tCount').textContent=R.done+' / '+ST.n;
+  $('tBar').style.width=(R.done/ST.n*100)+'%';
+ }
+}
+function showOv(html){const o=$('ov');o.innerHTML=html;o.classList.add('show');}
+function hideOv(){$('ov').classList.remove('show');$('ov').innerHTML='';}
+function countdown(next){
+ R.state='idle';
+ showOv('<h2>じゅんび</h2><div class="cd" id="cdNum">3</div><p>ルール：'+esc(ruleText())+'</p>');
+ let n=3;
+ const tick=function(){
+  if(n===0){hideOv();next();return;}
+  const el=$('cdNum');if(el)el.textContent=n;
+  n--;later(tick,900);
+ };
+ tick();
+}
+function startPractice(){
+ R.phase='practice';R.pIdx=0;R.lastKey=null;
+ const p=paramsFor(R.level);
+ R.pQueue=makeTrials(['Go','NoGo','Go','Go','NoGo'],p,R.level);
+ updateTop();setStatus('れんしゅう：ゆっくり慣れていきましょう');
+ countdown(function(){later(nextTrial,500);});
+}
+function startMain(){
+ R.phase='main';R.done=0;R.trials=[];R.blocks=[];R.queue=[];R.level=ST.startLevel-1;R.extra=0;R.lastKey=null;
+ updateTop();setStatus('');
+ countdown(function(){later(nextTrial,500);});
+}
+function endPractice(){
+ R.state='idle';setStageFix();
+ showOv('<h2>れんしゅう おわり！</h2><p>いい感じです。つぎは本番（'+ST.n+'回）です。</p>'+
+  '<button class="btn big gold" data-act="main">本番をはじめる</button>'+
+  '<button class="btn big ghost" data-act="again">もう一度れんしゅう</button>');
+}
+function nextTrial(){
+ if(!R)return;
+ let tr;
+ if(R.phase==='practice'){
+  if(R.pIdx>=R.pQueue.length){endPractice();return;}
+  tr=R.pQueue[R.pIdx];
+ }else{
+  if(R.done>=ST.n){finish(false);return;}
+  if(R.queue.length===0)buildBlock();
+  tr=R.queue.shift();
+ }
+ present(tr);
+}
+function present(tr){
+ R.curTrial=tr;R.state='stim';R.responding=false;
+ const tok=++R.token;
+ $('stage').className='stage';
+ const audio=curSet().mod==='audio';
+ $('stageIn').innerHTML=audio?'<div class="stim audio">🔊</div>':stimHTML(tr.item);
+ if(!audio){
+  requestAnimationFrame(function(){requestAnimationFrame(function(){beginResponse(tr,tok);});});
+ }else if(tr.item.t==='tone'){
+  tone(tr.item.f,0.5,0.3);beginResponse(tr,tok);
+ }else{
+  speak(tr.item.w,function(){beginResponse(tr,tok);});
+ }
+}
+function beginResponse(tr,tok){
+ if(!R||R.token!==tok||R.state!=='stim'||R.responding)return;
+ R.onset=performance.now();R.responding=true;
+ R.timer=later(function(){endTrial(false,null);},tr.dur);
+}
+function onPress(){
+ if(!R)return;
+ if(R.state==='stim'&&R.responding){endTrial(true,performance.now()-R.onset);}
+ else if(R.state==='isi'&&R.phase==='main'){R.extra++;}
+}
+const MSG={
+ hit:['いいですね！','その調子！','ナイス！','バッチリです！'],
+ CR:['よく止まれました！','ナイス、がまん！','その調子！','おみごと！'],
+ FA:['おしい！ つぎは見てから','だいじょうぶ、つぎいきましょう','おしい！ ゆっくり見ましょう'],
+ miss:['だいじょうぶ！ つぎいきましょう','ゆっくりでOK！','おしい！ つぎは押せます']
+};
+function showFeedback(res){
+ const good=res==='hit'||res==='CR';
+ if(good&&ST.sound&&curSet().mod!=='audio')chime();
+ if(!ST.feedback){setStageFix();return;}
+ const arr=MSG[res],m=arr[Math.floor(Math.random()*arr.length)];
+ $('stage').className='stage '+(good?'fb-good':'fb-try');
+ $('stageIn').innerHTML='<div class="fb">'+(good?'👍':'💪')+'<br>'+m+'</div>';
+}
+function endTrial(resp,rt){
+ if(!R||R.state!=='stim')return;
+ clearTimers();R.responding=false;R.state='isi';stopSpeech();
+ const tr=R.curTrial,isGo=tr.type==='Go';
+ const res=isGo?(resp?'hit':'miss'):(resp?'FA':'CR');
+ if(R.phase==='main'){
+  R.done++;
+  R.trials.push({n:R.done,blk:Math.floor((R.done-1)/BLOCK)+1,type:tr.type,stim:tr.item.n,resp:resp?1:0,res:res,rt:resp?Math.round(rt):null,lvl:tr.lvl,dur:tr.dur,isi:tr.isi});
+  if(R.done%BLOCK===0)finishBlock();
+ }else{R.pIdx++;}
+ updateTop();
+ showFeedback(res);
+ later(nextTrial,tr.isi);
+}
+function finishBlock(){
+ const trs=R.trials.slice(-BLOCK),sm=summarize(trs,0);
+ R.blocks.push({no:R.blockInfo.no,lvl:R.blockInfo.lvl,dur:R.blockInfo.dur,ratio:R.blockInfo.ratio,acc:sm.acc,fa:sm.fa,miss:sm.miss,rt:sm.rtMean});
+ if(ST.mode==='auto'&&R.done<ST.n){
+  if(sm.acc>=UP_TH&&R.level<SPEEDS.length-1){R.level++;setStatus('いい調子！ 少しレベルアップします');}
+  else if(sm.acc<DOWN_TH&&R.level>0){R.level--;setStatus('ペースを少しゆるめます');}
+  else setStatus('');
+  later(function(){setStatus('');},3500);
+ }
+}
+function pause(){
+ if(!R||!(R.state==='stim'||R.state==='isi'))return;
+ clearTimers();stopSpeech();
+ if(R.state==='stim'&&R.phase==='main'&&R.curTrial)R.queue.unshift(R.curTrial);
+ R.responding=false;R.state='paused';setStageFix();
+ showOv('<h2>いったん休けい</h2><p>ゆっくりで大丈夫です</p>'+
+  '<button class="btn big" data-act="resume">つづける</button>'+
+  (R.phase==='main'&&R.done>0?'<button class="btn big ghost" data-act="stopSave">ここまでの結果を見る</button>':'')+
+  '<button class="btn big ghost" data-act="quit">保存せずにもどる</button>');
+}
+function abort(){
+ if(R)clearTimers();stopSpeech();R=null;hideOv();show('view-setup');renderSetup();
+}
+$('ov').addEventListener('click',function(e){
+ const b=e.target.closest('[data-act]');if(!b||!R)return;
+ const a=b.dataset.act;
+ if(a==='resume'){hideOv();R.state='idle';later(nextTrial,900);}
+ else if(a==='stopSave'){hideOv();finish(true);}
+ else if(a==='quit'){if(confirm('保存せずにもどります。よろしいですか？'))abort();}
+ else if(a==='main'){hideOv();startMain();}
+ else if(a==='again'){hideOv();startPractice();}
+});
+$('tPause').addEventListener('click',function(){this.blur();pause();});
+$('resp').addEventListener('pointerdown',function(e){e.preventDefault();onPress();});
+$('view-task').addEventListener('pointerdown',function(e){
+ if(ST.resp!=='screen')return;
+ if(e.target.closest('button'))return;
+ onPress();
+});
+document.addEventListener('keydown',function(e){
+ if(!$('view-task').classList.contains('active'))return;
+ if(e.code==='Space'||e.key===' '||e.key==='Enter'){
+  if(e.target&&e.target.closest&&e.target.closest('#ov'))return;
+  e.preventDefault();if(!e.repeat)onPress();
+ }
+});
+document.addEventListener('visibilitychange',function(){if(document.hidden)pause();});
+
+/* ================= 集計・保存 ================= */
+function summarize(trs,extra){
+ const c=function(r){return trs.filter(function(t){return t.res===r;}).length;};
+ const nGo=trs.filter(function(t){return t.type==='Go';}).length,nNo=trs.length-nGo;
+ const hit=c('hit'),miss=c('miss'),fa=c('FA'),cr=c('CR');
+ const rtHit=trs.filter(function(t){return t.res==='hit';}).map(function(t){return t.rt;});
+ const rtFA=trs.filter(function(t){return t.res==='FA';}).map(function(t){return t.rt;});
+ return {n:trs.length,nGo:nGo,nNo:nNo,hit:hit,miss:miss,fa:fa,cr:cr,
+  acc:trs.length?(hit+cr)/trs.length:null,
+  goAcc:nGo?hit/nGo:null,nogoAcc:nNo?cr/nNo:null,
+  faRate:nNo?fa/nNo:null,missRate:nGo?miss/nGo:null,
+  rtMean:mean(rtHit),rtSD:sd(rtHit),rtMed:median(rtHit),rtFA:mean(rtFA),extra:extra||0};
+}
+function finish(early){
+ if(!R)return;
+ clearTimers();stopSpeech();hideOv();
+ if(R.trials.length===0){abort();return;}
+ const s=curSet();
+ const sess={id:Date.now(),at:new Date().toISOString(),userId:ST.userId.trim(),setId:s.id,setName:s.name,swap:ST.swap,rule:ruleText(),
+  mode:ST.mode,autoTarget:ST.autoTarget,startLevel:ST.startLevel,dur:ST.dur,nogo:ST.nogo,isi:ST.isi,nPlanned:ST.n,resp:ST.resp,
+  early:!!early,trials:R.trials,blocks:R.blocks,extra:R.extra};
+ sess.summary=summarize(R.trials,R.extra);
+ R=null;
+ const saved=saveSession(sess);
+ renderResult(sess,saved);show('view-result');
+}
+function saveSession(sess){
+ const h=store.get(KEY_H,[]);h.push(sess);
+ while(h.length>100)h.shift();
+ if(store.set(KEY_H,h))return true;
+ for(let i=0;i<h.length-1;i++){delete h[i].trials;if(store.set(KEY_H,h))return true;}
+ return false;
+}
+
+/* ================= 結果画面 ================= */
+let shown=null;
+const RES_JA={hit:'正反応(Go)',miss:'オミッションエラー',FA:'コミッションエラー',CR:'正抑制(No-Go)'};
+function renderResult(s,saved){
+ shown=s;const m=s.summary;
+ $('resTitle').textContent=s.early?'ここまでの結果':'おつかれさまでした！';
+ $('resSub').textContent=fmtDate(s.at)+(s.userId?'　利用者：'+s.userId:'');
+ let msg;
+ if(m.acc>=0.9)msg='すばらしい集中力でした！';
+ else if(m.acc>=0.7)msg='しっかりできました！ その調子です';
+ else msg='最後までやりとげました。回数を重ねるほど慣れていきます！';
+ $('resMsg').textContent=(s.early?'途中までよくがんばりました。 ':'')+msg;
+ const mt=function(v,l,sub,gold){return '<div class="metric'+(gold?' gold':'')+'"><div class="v">'+v+'</div><div class="l">'+l+'</div><small>'+sub+'</small></div>';};
+ $('resMetrics').innerHTML=
+  mt(pct(m.acc),'全体の正答率',m.hit+m.cr+' / '+m.n+' 試行')+
+  mt(pct(m.goAcc),'Go：押せた率','押すべきときに押せた（'+m.hit+'/'+m.nGo+'）')+
+  mt(pct(m.nogoAcc),'No-Go：止まれた率','押さないべきときに止まれた（'+m.cr+'/'+m.nNo+'）')+
+  mt(m.fa+'回','コミッションエラー','押してはいけないのに押した'+(m.faRate!=null?'（'+pct(m.faRate)+'）':''),true)+
+  mt(m.miss+'回','オミッションエラー','押すべきなのに押さなかった'+(m.missRate!=null?'（'+pct(m.missRate)+'）':''),true)+
+  mt(msTxt(m.rtMean),'平均反応時間','Goに正しく押せたとき'+(m.rtSD!=null?'（SD '+Math.round(m.rtSD)+'）':''));
+ const ex=[];
+ if(m.rtFA!=null)ex.push('コミッションエラー時の平均反応時間：'+msTxt(m.rtFA));
+ if(m.extra>0)ex.push('刺激がないときの押し：'+m.extra+'回');
+ $('resExtra').textContent=ex.join('　／　');
+ $('resCond').innerHTML=esc(s.setName)+(s.swap?'（ルール入れ替え）':'')+'<br>'+esc(s.rule)+'<br>'+esc(settingText(s));
+ let rows='';
+ s.blocks.forEach(function(b){
+  rows+='<tr><td>'+b.no+'</td><td>'+(b.lvl?'Lv'+b.lvl:'固定')+'</td><td>'+(b.dur/1000).toFixed(1)+'秒</td><td>'+Math.round((1-b.ratio)*100)+':'+Math.round(b.ratio*100)+'</td>'+
+   '<td><span class="minibar" style="width:'+Math.round(b.acc*80)+'px"></span>'+pct(b.acc)+'</td><td>'+b.fa+'</td><td>'+b.miss+'</td><td>'+(b.rt!=null?Math.round(b.rt):'—')+'</td></tr>';
+ });
+ $('resBlocks').innerHTML=rows?'<table class="tbl"><thead><tr><th>ブロック</th><th>レベル</th><th>提示</th><th>Go:No-Go</th><th>正答率</th><th>コミッション</th><th>オミッション</th><th>RT(ms)</th></tr></thead><tbody>'+rows+'</tbody></table>':'<p class="hint">10試行に満たないため、ブロック別の集計はありません。</p>';
+ $('saveNote').textContent=saved?'この結果は端末に自動保存されました。CSVで書き出すこともできます。':'この端末では自動保存できませんでした。必ずCSVを保存してください。';
+}
+$('resSetup').onclick=function(){show('view-setup');renderSetup();};
+$('resAgain').onclick=function(){renderIntro();show('view-intro');};
+$('resHist').onclick=function(){openHistory();};
+
+/* ================= CSV ================= */
+function csvCell(v){if(v==null)return '';const s=String(v);return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function csvText(rows){return rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');}
+const SUM_HEAD=['日時','利用者ID','刺激','ルール','設定','試行数','途中終了','全体正答率(%)','Go正答率(%)','No-Go正答率(%)','コミッション数','コミッション率(%)','オミッション数','オミッション率(%)','平均RT(ms)','RT標準偏差(ms)','RT中央値(ms)','コミッション時平均RT(ms)','刺激なしの押し'];
+function sumRow(s){
+ const m=s.summary;
+ return [fmtDate(s.at),s.userId,s.setName+(s.swap?'(入替)':''),s.rule,settingText(s),m.n,s.early?'はい':'',pctNum(m.acc),pctNum(m.goAcc),pctNum(m.nogoAcc),m.fa,pctNum(m.faRate),m.miss,pctNum(m.missRate),
+  m.rtMean!=null?Math.round(m.rtMean):'',m.rtSD!=null?Math.round(m.rtSD):'',m.rtMed!=null?Math.round(m.rtMed):'',m.rtFA!=null?Math.round(m.rtFA):'',m.extra];
+}
+function sessionCSV(s){
+ const row=sumRow(s),rows=[['【要約】','']];
+ SUM_HEAD.forEach(function(h,i){rows.push([h,row[i]]);});
+ rows.push([]);rows.push(['【ブロック別】']);
+ rows.push(['ブロック','レベル','提示(ms)','No-Go割合(%)','正答率(%)','コミッション','オミッション','平均RT(ms)']);
+ s.blocks.forEach(function(b){rows.push([b.no,b.lvl?'Lv'+b.lvl:'固定',b.dur,Math.round(b.ratio*100),pctNum(b.acc),b.fa,b.miss,b.rt!=null?Math.round(b.rt):'']);});
+ rows.push([]);rows.push(['【試行ごと】']);
+ rows.push(['試行','ブロック','種類','刺激','反応(1=押した)','結果','反応時間(ms)','レベル','提示(ms)','間隔(ms)']);
+ (s.trials||[]).forEach(function(t){rows.push([t.n,t.blk,t.type,t.stim,t.resp,RES_JA[t.res],t.rt,t.lvl?'Lv'+t.lvl:'',t.dur,t.isi]);});
+ return csvText(rows);
+}
+function download(name,text){
+ const blob=new Blob(['\ufeff'+text],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+ setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+function copyText(text,done){
+ const fallback=function(){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);
+  ta.focus();ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();done(ok);
+ };
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done(true);},fallback);}else fallback();
+}
+function csvName(s){return 'gonogo_'+(s.userId||'user')+'_'+fileStamp(s.at)+'.csv';}
+$('resCsv').onclick=function(){if(shown)download(csvName(shown),sessionCSV(shown));};
+$('resCopy').onclick=function(){if(!shown)return;const b=this;copyText(sessionCSV(shown),function(ok){b.textContent=ok?'コピーしました':'コピーできませんでした';setTimeout(function(){b.textContent='CSVをコピー';},2000);});};
+
+/* ================= 記録 ================= */
+let HF='__all';
+function openHistory(){renderHistory();show('view-history');}
+function trendSVG(list){
+ if(!list.length)return '<p class="hint">まだ記録がありません</p>';
+ const W=640,H=230,L=42,Rr=14,T=14,B=34,n=list.length;
+ const x=function(i){return n===1?L+(W-L-Rr)/2:L+(W-L-Rr)*i/(n-1);};
+ const y=function(v){return T+(H-T-B)*(1-v);};
+ let g='';
+ [0,0.25,0.5,0.75,1].forEach(function(v){g+='<line x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e2e8ec"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+Math.round(v*100)+'%</text>';});
+ const step=Math.ceil(n/10);
+ list.forEach(function(s,i){if(i%step===0||i===n-1){const d=new Date(s.at);g+='<text x="'+x(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="#64748b">'+(d.getMonth()+1)+'/'+d.getDate()+'</text>';}});
+ const line=function(fn,color){
+  const pts=[];list.forEach(function(s,i){const v=fn(s);if(v!=null)pts.push([x(i),y(v)]);});
+  let o='';
+  if(pts.length>1)o+='<polyline fill="none" stroke="'+color+'" stroke-width="3" points="'+pts.map(function(p){return p[0]+','+p[1];}).join(' ')+'"/>';
+  pts.forEach(function(p){o+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="'+color+'"/>';});
+  return o;
+ };
+ g+=line(function(s){return s.summary.faRate;},'#e5a823')+line(function(s){return s.summary.acc;},'#0f7c80');
+ return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">'+g+'</svg>';
+}
+function renderHistory(){
+ const all=store.get(KEY_H,[]);
+ const ids=[];all.forEach(function(s){if(ids.indexOf(s.userId)<0)ids.push(s.userId);});
+ if(HF!=='__all'&&ids.indexOf(HF)<0)HF='__all';
+ const sel=$('histUser');
+ sel.innerHTML='<option value="__all">すべて</option>'+ids.map(function(u){return '<option value="'+esc(u)+'">'+(u?esc(u):'（ID未入力）')+'</option>';}).join('');
+ sel.value=HF;
+ const list=all.filter(function(s){return HF==='__all'||s.userId===HF;});
+ $('histChart').innerHTML=trendSVG(list.slice(-20));
+ if(!list.length){$('histList').innerHTML='<p class="hint">まだ記録がありません</p>';return;}
+ let rows='';
+ list.slice().reverse().slice(0,50).forEach(function(s){
+  const m=s.summary;
+  rows+='<tr><td>'+fmtDate(s.at)+'</td><td>'+(s.userId?esc(s.userId):'—')+'</td><td>'+esc(s.setName)+'</td><td>'+pct(m.acc)+'</td><td>'+m.fa+'</td><td>'+m.miss+'</td><td>'+(m.rtMean!=null?Math.round(m.rtMean):'—')+'</td>'+
+   '<td><button class="btn ghost sm" data-open="'+s.id+'">開く</button> <button class="btn ghost sm" data-del="'+s.id+'">削除</button></td></tr>';
+ });
+ $('histList').innerHTML='<table class="tbl"><thead><tr><th>日時</th><th>ID</th><th>刺激</th><th>正答率</th><th>コミッ</th><th>オミッ</th><th>RT</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+$('histUser').addEventListener('change',function(){HF=this.value;renderHistory();});
+$('histList').addEventListener('click',function(e){
+ const o=e.target.closest('[data-open]'),d=e.target.closest('[data-del]');
+ const h=store.get(KEY_H,[]);
+ if(o){const s=h.find(function(x){return String(x.id)===o.dataset.open;});if(s){renderResult(s,true);show('view-result');}}
+ else if(d){if(confirm('この記録を削除します。よろしいですか？')){store.set(KEY_H,h.filter(function(x){return String(x.id)!==d.dataset.del;}));renderHistory();}}
+});
+$('histCsv').onclick=function(){
+ const all=store.get(KEY_H,[]).filter(function(s){return HF==='__all'||s.userId===HF;});
+ if(!all.length)return;
+ download('gonogo_history_'+fileStamp(new Date().toISOString())+'.csv',csvText([SUM_HEAD].concat(all.map(sumRow))));
+};
+$('histClear').onclick=function(){if(confirm('保存されている記録をすべて削除します。この操作は取り消せません。よろしいですか？')){store.set(KEY_H,[]);renderHistory();}};
+$('histBack').onclick=function(){show('view-setup');renderSetup();};
+$('btnHist').onclick=openHistory;
+
+/* ================= 起動 ================= */
+renderSetup();
+})();
+</script>
+</body>
+</html>
