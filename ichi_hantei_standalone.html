@@ -33,10 +33,14 @@
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%;
   padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-body[data-size="0"]{--card-h:260px;--pic:96px}
-body[data-size="1"]{--card-h:340px;--pic:132px}
-body[data-size="2"]{--card-h:420px;--pic:176px}
-body[data-size="3"]{--card-h:500px;--pic:224px}
+body[data-size="0"]{--card-h:260px}
+body[data-size="1"]{--card-h:340px}
+body[data-size="2"]{--card-h:420px}
+body[data-size="3"]{--card-h:500px}
+body[data-pic="0"]{--pic:96px}
+body[data-pic="1"]{--pic:132px}
+body[data-pic="2"]{--pic:176px}
+body[data-pic="3"]{--pic:224px}
 .wrap{max-width:780px;margin:0 auto}
 button{font-family:inherit}
 button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -59,7 +63,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .step output{min-width:108px;display:flex;align-items:center;justify-content:center;padding:0 10px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button,.chip,.flag{min-height:46px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:15px;cursor:pointer}
-[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--teal);font-weight:700}
+.tcard[aria-pressed="true"]::after{content:"✓ 選択中";margin-top:6px;font-size:13px;font-weight:700}
 .tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:10px}
 .tcard{display:flex;flex-direction:column;gap:2px;text-align:left;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-width:0}
 .tcard .ex{font-size:26px;line-height:1.4}
@@ -204,7 +209,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 
   <div class="sec">
     <h2>表示</h2>
-    <div class="row"><div class="lbl"><b>絵と文字の大きさ</b></div><div class="ctl"><div class="seg" data-seg="size"></div></div></div>
+    <div class="row"><div class="lbl"><b>絵の大きさ</b></div><div class="ctl"><div class="seg" data-seg="picSize"></div></div></div>
+    <div class="row"><div class="lbl"><b>文字の大きさ</b></div><div class="ctl"><div class="seg" data-seg="wordSize"></div></div></div>
     <div class="row"><div class="lbl"><b>回答ボタンの左右</b><small>通常は左が「○」、右が「×」です</small></div><div class="ctl"><button type="button" class="flag" data-flag="swap" aria-pressed="false">左右を入れ替える</button></div></div>
     <div class="row"><div class="lbl"><b>記録名</b><small>結果に添える名前やメモです(任意)</small></div><div class="ctl"><input class="txt" id="nameIn" type="text" maxlength="30" autocomplete="off" aria-label="記録名"></div></div>
   </div>
@@ -316,8 +322,11 @@ var TASKS={
 var KEY='ichi-hantei-settings-v1',HKEY='ichi-hantei-history-v1';
 function load(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-var DEF={tasks:['pic-text','text-voice','pic-voice'],count:20,present:3,interval:1.5,limit:0,order:'block',feedback:'mark',scripts:['kanji','hira','kata'],cats:CATS.slice(),moraMin:2,moraMax:5,mismatch:50,mmType:'random',rate:0.6,voice:'',audioDelay:0.5,replay:true,size:2,swap:false,name:''};
-var cfg=Object.assign({},DEF,load(KEY,{}));
+var DEF={tasks:['pic-text','text-voice','pic-voice'],count:20,present:3,interval:1.5,limit:0,order:'block',feedback:'mark',scripts:['kanji','hira','kata'],cats:CATS.slice(),moraMin:2,moraMax:5,mismatch:50,mmType:'random',rate:0.6,voice:'',audioDelay:0.5,replay:true,picSize:2,wordSize:2,swap:false,name:''};
+var saved=load(KEY,{});
+var cfg=Object.assign({},DEF,saved);
+if(saved.size!==undefined&&saved.picSize===undefined){cfg.picSize=saved.size;cfg.wordSize=saved.size}
+delete cfg.size;
 ['tasks','scripts','cats'].forEach(function(k){if(!Array.isArray(cfg[k])||!cfg[k].length)cfg[k]=DEF[k].slice()});
 cfg.tasks=cfg.tasks.filter(function(t){return TASKS[t]});if(!cfg.tasks.length)cfg.tasks=DEF.tasks.slice();
 
@@ -333,11 +342,13 @@ var STEPS={
   rate:T([0.3,0.4,0.5,0.6,0.7,0.8,1,1.2],''),
   audioDelay:T([0,0.5,1,1.5,2],'秒後')
 };
+var SIZES=[{v:0,l:'小'},{v:1,l:'中'},{v:2,l:'大'},{v:3,l:'特大'}];
 var SEGS={
   order:[{v:'block',l:'課題ごとにまとめる'},{v:'mixed',l:'混ぜる'}],
   feedback:[{v:'none',l:'なし'},{v:'mark',l:'○×だけ'},{v:'detail',l:'○×と正解'}],
   mmType:[{v:'random',l:'無作為'},{v:'semantic',l:'意味が近い'},{v:'phono',l:'語頭の音が同じ'},{v:'mixed',l:'混合'}],
-  size:[{v:0,l:'小'},{v:1,l:'中'},{v:2,l:'大'},{v:3,l:'特大'}]
+  picSize:SIZES,
+  wordSize:SIZES
 };
 
 var hasTTS=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
@@ -480,7 +491,7 @@ function setButtons(on){R.open=on;$('#btnL').disabled=!on;$('#btnR').disabled=!o
 function fitWord(){
   var el=$('#word'),card=$('#card');
   if(el.hidden)return;
-  var base=Math.min(WORD_PX[R.cfg.size],window.innerHeight*0.17),lo=20,hi=base,maxW=card.clientWidth-36;
+  var base=Math.min(WORD_PX[R.cfg.wordSize],window.innerHeight*0.17),lo=20,hi=base,maxW=card.clientWidth-36;
   el.style.fontSize=hi+'px';
   if(el.scrollWidth<=maxW)return;
   while(hi-lo>1){var mid=(hi+lo)/2;el.style.fontSize=mid+'px';if(el.scrollWidth<=maxW)lo=mid;else hi=mid}
@@ -585,12 +596,13 @@ async function loop(id){
   }
   finish();
 }
+function applySize(c){document.body.dataset.pic=String(c.picSize);document.body.dataset.size=String(Math.max(c.picSize,c.wordSize))}
 function startSession(){
   var c=Object.assign({},cfg);
   c.tasks=c.tasks.filter(function(t){return hasTTS||!TASKS[t].audio});
   R.cfg=c;R.trials=buildTrials(c);R.results=[];R.i=0;R.runId++;R.startedAt=Date.now();
   clearTimers();unlockSpeech();lockScreen();
-  document.body.dataset.size=String(c.size);
+  applySize(c);
   paintAns();screen('run');showBlank();$('#run').classList.remove('intro-on');$('#intro').hidden=true;$('#quitPanel').hidden=true;
   loop(R.runId);
 }
@@ -731,7 +743,7 @@ function bind(){
 initControls();
 if(hasTTS){loadVoices();try{speechSynthesis.addEventListener('voiceschanged',loadVoices)}catch(e){}}
 bind();sync();renderHistory();
-document.body.dataset.size=String(cfg.size);
+applySize(cfg);
 })();
 </script>
 
