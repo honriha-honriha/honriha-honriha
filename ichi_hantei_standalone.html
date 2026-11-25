@@ -195,7 +195,7 @@ button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-
   <div class="sec">
     <h2>不一致の問題</h2>
     <div class="row"><div class="lbl"><b>不一致の割合</b><small>各課題の問題のうち、ちがう組み合わせにする割合です</small></div><div class="ctl"><div class="step" data-step="mismatch"></div></div></div>
-    <div class="row"><div class="lbl"><b>ちがう語の選び方</b><small>「意味が近い」は同じ分野から、「語頭の音が同じ」は最初の音が同じ語から選びます。該当がなければ無作為になります</small></div><div class="ctl"><div class="seg" data-seg="mmType"></div></div></div>
+    <div class="row"><div class="lbl"><b>ちがう語の選び方</b><small>「意味が近い」は同じ分野から、「モーラ数が同じ」は読みの長さが同じ語から選びます。該当がなければ無作為になります</small></div><div class="ctl"><div class="seg" data-seg="mmType"></div></div></div>
   </div>
 
   <div class="sec" id="audioSec">
@@ -327,6 +327,7 @@ var saved=load(KEY,{});
 var cfg=Object.assign({},DEF,saved);
 if(saved.size!==undefined&&saved.picSize===undefined){cfg.picSize=saved.size;cfg.wordSize=saved.size}
 delete cfg.size;
+if(cfg.mmType==='phono')cfg.mmType='mora';
 ['tasks','scripts','cats'].forEach(function(k){if(!Array.isArray(cfg[k])||!cfg[k].length)cfg[k]=DEF[k].slice()});
 cfg.tasks=cfg.tasks.filter(function(t){return TASKS[t]});if(!cfg.tasks.length)cfg.tasks=DEF.tasks.slice();
 
@@ -346,7 +347,7 @@ var SIZES=[{v:0,l:'小'},{v:1,l:'中'},{v:2,l:'大'},{v:3,l:'特大'}];
 var SEGS={
   order:[{v:'block',l:'課題ごとにまとめる'},{v:'mixed',l:'混ぜる'}],
   feedback:[{v:'none',l:'なし'},{v:'mark',l:'○×だけ'},{v:'detail',l:'○×と正解'}],
-  mmType:[{v:'random',l:'無作為'},{v:'semantic',l:'意味が近い'},{v:'phono',l:'語頭の音が同じ'},{v:'mixed',l:'混合'}],
+  mmType:[{v:'random',l:'無作為'},{v:'semantic',l:'意味が近い'},{v:'mora',l:'モーラ数が同じ'},{v:'mixed',l:'混合'}],
   picSize:SIZES,
   wordSize:SIZES
 };
@@ -443,14 +444,12 @@ function drawSeq(items,n){
 function pickOne(a){return a[Math.floor(Math.random()*a.length)]}
 function distractor(target,items,mode){
   var others=items.filter(function(x){return x.id!==target.id});
-  if(mode==='mixed')mode=pickOne(['random','semantic','phono']);
-  var cand=[],type=mode;
+  if(mode==='mixed')mode=pickOne(['random','semantic','mora']);
+  var LABEL={random:'無作為',semantic:'意味が近い',mora:'モーラ数が同じ'};
+  var cand=[],type=LABEL[mode];
   if(mode==='semantic'){cand=others.filter(function(x){return x.cat===target.cat})}
-  else if(mode==='phono'){
-    cand=others.filter(function(x){return x.first===target.first});
-    if(!cand.length){cand=others.filter(function(x){return x.mora===target.mora});type='phono(モーラ数)'}
-  }
-  if(!cand.length){cand=others;if(mode!=='random')type='random(代替)'}
+  else if(mode==='mora'){cand=others.filter(function(x){return x.mora===target.mora})}
+  if(!cand.length){cand=others;if(mode!=='random')type='無作為(該当なし)'}
   return {item:pickOne(cand),type:type};
 }
 function buildTrials(c){
