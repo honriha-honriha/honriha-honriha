@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -76,10 +75,11 @@ select{width:100%;font-size:1.1rem;padding:12px;border-radius:10px;border:2px so
    <option value="all">3つとも判断(完全一致・マーク一致・数字一致を選ぶ)</option>
   </select>
   <label for="count">カードの枚数</label>
-  <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select>
+  <select id="count"><option>10</option><option selected>20</option><option>30</option><option>50</option><option>100</option></select>
   <label for="sec">1枚の表示時間</label>
   <select id="sec"><option value="0">なし(答えるまで表示)</option><option value="0.5">0.5秒(とてもはやい)</option><option value="1">1秒(はやい)</option><option value="2">2秒</option><option value="3" selected>3秒</option><option value="4">4秒</option><option value="5">5秒(ゆっくり)</option></select>
   <button class="btn start" id="startBtn">はじめる</button>
+  <button class="btn diff" id="practiceBtn" style="margin-top:12px">練習する(5問)</button>
  </section>
 
  <section id="game" class="hidden">
@@ -91,7 +91,7 @@ select{width:100%;font-size:1.1rem;padding:12px;border-radius:10px;border:2px so
  </section>
 
  <section id="result" class="panel hidden">
-  <h1>おつかれさまでした</h1>
+  <h1 id="resTitle">おつかれさまでした</h1>
   <div class="score" id="score"></div>
   <p class="sub" id="rt" style="margin:0"></p>
   <div class="res" id="res"></div>
@@ -184,9 +184,11 @@ const OPTS={
  two:[["same","同じ","same"],["diff","ちがう","diff"]],
  all:[["both","完全一致","c-both"],["suit","マークだけ一致","c-suit"],["num","数字だけ一致","c-num"],["none","どれもちがう","c-none"]]
 };
-function start(){
-  cfg={rule:$("rule").value,n:+$("count").value,ms:+$("sec").value*1000,k:+$("nb").value};
+function start(practice){
+  practice=practice===true;
+  cfg={practice,rule:$("rule").value,n:+$("count").value,ms:+$("sec").value*1000,k:+$("nb").value};
   cfg.gap=cfg.ms?Math.min(350,cfg.ms*0.25):350;
+  if(practice)cfg.n=cfg.k+5;
   seq=makeSeq(cfg.n,cfg.rule,cfg.k);
   ans=seq.map((c,i)=>{
     if(i<cfg.k)return{target:null,resp:null};
@@ -194,7 +196,7 @@ function start(){
     return{target:cfg.rule==="all"?cat(p,c):(same(p,c,cfg.rule)?"same":"diff"),resp:null};
   });
   idx=-1;
-  $("ruleLbl").textContent=(cfg.k===1?"ワンバック":"ツーバック")+" / "+(cfg.rule==="all"?"3つとも判断":RULE_NAME[cfg.rule]);
+  $("ruleLbl").textContent=(cfg.k===1?"ワンバック":"ツーバック")+" / "+(cfg.rule==="all"?"3つとも判断":RULE_NAME[cfg.rule])+(practice?" / 練習":"");
   const o=cfg.rule==="all"?OPTS.all:OPTS.two;
   const bx=$("btns");bx.innerHTML="";
   o.forEach(([key,label,cls])=>{
@@ -225,6 +227,7 @@ function answer(key){
 }
 function finish(){
   clearTimers();
+  $("resTitle").textContent=cfg.practice?"練習おつかれさまでした":"おつかれさまでした";
   const t=ans.slice(cfg.k);
   const correct=t.filter(a=>a.resp===a.target).length;
   const none=t.filter(a=>a.resp===null).length;
@@ -272,9 +275,10 @@ $("openRv").onclick=()=>showReview(cfg.k);
 $("rvPrev").onclick=()=>{if(rv>cfg.k)showReview(rv-1)};
 $("rvNext").onclick=()=>{if(rv<cfg.n-1)showReview(rv+1)};
 $("rvBack").onclick=()=>show("result");
-$("startBtn").onclick=start;
+$("startBtn").onclick=()=>start(false);
+$("practiceBtn").onclick=()=>start(true);
 $("nextBtn").onclick=()=>{if(shownAt!==null)next()};
-$("again").onclick=start;
+$("again").onclick=()=>start(cfg.practice);
 $("home").onclick=()=>{clearTimers();show("setup")};
 document.addEventListener("keydown",e=>{
   if($("game").classList.contains("hidden"))return;
@@ -285,5 +289,3 @@ document.addEventListener("keydown",e=>{
 </script>
 </body>
 </html>
-
-</body></html>
