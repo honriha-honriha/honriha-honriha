@@ -62,8 +62,9 @@ ul.rules{margin:0;padding-left:1.3em;line-height:1.9;font-size:17px}
 .placeholder{position:absolute;bottom:0;width:84px;height:80px;max-height:100%;border:3px dashed var(--edge);border-radius:0 0 18px 18px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--sub);font-size:13px;padding:4px;line-height:1.3}
 .cup{position:relative;display:none;border:4px solid #555;border-top:none;border-radius:0 0 20px 20px;background:#fffdfa;overflow:visible}
 .cup.S{width:62px}.cup.L{width:80px}
-.cup .fill{position:absolute;left:0;right:0;bottom:0;background:var(--coffee);border-radius:0 0 14px 14px}
-.cup .brimzone{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(45deg,rgba(211,47,47,.18),rgba(211,47,47,.18) 6px,rgba(211,47,47,.05) 6px,rgba(211,47,47,.05) 12px)}
+.cup::before{content:"";position:absolute;left:-7px;right:-7px;top:-4px;height:5px;border-radius:3px;background:#555;z-index:3}  /* カップのふち */
+.cup .fill{position:absolute;left:0;right:0;bottom:0;background:var(--coffee);border-radius:0 0 14px 14px;box-shadow:inset 0 4px 0 var(--surf,#2a170b)}  /* 上面の線 */
+.cup .brimzone{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(45deg,rgba(211,47,47,.32),rgba(211,47,47,.32) 6px,rgba(211,47,47,.10) 6px,rgba(211,47,47,.10) 12px)}
 .cup .mark{position:absolute;left:-10px;right:-10px;border-top:3px dashed var(--line)}
 .cup .mark span{position:absolute;left:100%;top:-12px;padding-left:4px;font-size:12px;font-weight:700;color:var(--line);white-space:nowrap}
 .cup.spill{animation:shake .3s 2}
@@ -189,11 +190,13 @@ const T={S:4.0,L:8.0};      // 適量ラインに届くまでの秒数(大は小
 let PX=26;                  // 1秒あたりのピクセル数(画面の高さに合わせて layout() が自動調整)
 const MIN_INTERVAL=2, MAX_INTERVAL=30;
 const TYPES={
-  C:{name:'コーヒー',color:'#4b2e1c',fill:'#4b2e1c'},
+  C:{name:'コーヒー',color:'#4b2e1c',edge:'#1f0f06',fill:'#4b2e1c'},
   M:{name:'キャラメルマキアート',disp:'キャラメル<wbr>マキアート',color:'#c98a3d',
-     fill:'linear-gradient(to top,#5a3620 0 38%,#d19a52 38% 72%,#f6e7cc 72% 100%)'},
+     edge:'#6b3f12',
+     fill:'linear-gradient(to top,#5a3620 0 38%,#c98a3d 38% 72%,#dba660 72% 100%)'},
   H:{name:'ホットチョコ',color:'#8e3f2f',
-     fill:'linear-gradient(to top,#8e3f2f 0 88%,#fdf1dc 88% 100%)'}
+     edge:'#4a150d',
+     fill:'linear-gradient(to top,#6e2c20 0 45%,#8e3f2f 45% 100%)'}
 };
 const MENU={2:['C'],4:['C','M'],6:['C','M','H']};   // 2種類=1銘柄×2サイズ、4種類=2銘柄、6種類=3銘柄
 const $=s=>document.querySelector(s);
@@ -319,6 +322,7 @@ function renderStation(s){
   s.cup.style.display=hasCup?'block':'none';
   s.ph.style.display=hasCup?'none':'flex';
   s.fill.style.background=TYPES[s.type||G.menu[0]].fill;
+  s.fill.style.setProperty('--surf',TYPES[s.type||G.menu[0]].edge);
   s.stream.style.background=TYPES[s.type||G.menu[0]].color;
   const locked=(s.state==='filling'||s.state==='result');
   s.sizeBtns.forEach(b=>{b.classList.toggle('sel',b.dataset.s===s.size);b.disabled=locked;});
