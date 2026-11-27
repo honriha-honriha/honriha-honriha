@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ポジション・ワンバック</title>
+<style>
+  :root{
+    --teal:#0f766e; --teal-light:#d5ecea; --teal-dark:#0b5a54;
+    --gold:#f5b82e; --gold-dark:#b7791f;
+    --slate:#334155; --slate-light:#64748b;
+    --bg:#f4f7f8; --red:#dc2626;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--slate);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    touch-action:manipulation;-webkit-user-select:none;user-select:none;}
+  .screen{display:none;height:100vh;height:100dvh;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* ---------- 設定画面 ---------- */
+  #setup{align-items:center;overflow-y:auto;padding:24px 16px 40px;}
+  #setup h1{margin:8px 0 4px;font-size:28px;color:var(--teal-dark);letter-spacing:.04em;}
+  #setup .sub{margin:0 0 20px;color:var(--slate-light);font-size:15px;text-align:center;line-height:1.6;max-width:560px;}
+  .card{background:#fff;border-radius:18px;padding:18px 20px;margin-bottom:14px;width:100%;max-width:560px;
+    box-shadow:0 2px 8px rgba(51,65,85,.08);}
+  .card h2{margin:0 0 4px;font-size:18px;}
+  .card .hint{margin:0 0 12px;font-size:13px;color:var(--slate-light);line-height:1.5;}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg button{flex:1 1 0;min-width:64px;min-height:56px;font-size:20px;font-weight:700;border-radius:14px;
+    border:2px solid var(--teal-light);background:#fff;color:var(--slate);cursor:pointer;}
+  .seg button.sel{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .seg.wide button{font-size:18px;}
+  .btn-main{width:100%;max-width:560px;min-height:68px;border:none;border-radius:20px;background:var(--gold);color:#3b2a05;
+    font-size:24px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--gold-dark);margin-top:6px;}
+  .btn-main:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gold-dark);}
+  .btn-sub{width:100%;max-width:560px;min-height:56px;border:2px solid var(--teal);border-radius:16px;background:#fff;color:var(--teal);
+    font-size:19px;font-weight:700;cursor:pointer;margin-top:12px;}
+
+  /* ---------- 課題画面 ---------- */
+  #game{padding:10px 12px 12px;gap:8px;}
+  .hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .hud .quit{min-height:44px;padding:0 16px;border-radius:12px;border:2px solid var(--slate-light);background:#fff;color:var(--slate);
+    font-size:15px;font-weight:700;cursor:pointer;}
+  .chip{background:#fff;border-radius:12px;padding:6px 14px;font-size:16px;font-weight:700;box-shadow:0 1px 4px rgba(51,65,85,.1);}
+  .chip b{color:var(--teal);font-size:20px;}
+  .dots{display:flex;gap:6px;align-items:center;margin-left:auto;}
+  .dots span{width:16px;height:16px;border-radius:50%;background:#dbe3e8;display:inline-block;}
+  .dots span.on{background:var(--teal);}
+  .dots.off{display:none;}
+  .msg{min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:22px;font-weight:800;color:var(--teal-dark);background:var(--teal-light);border-radius:14px;padding:6px 12px;line-height:1.35;}
+  .msg.respond{background:var(--gold);color:#3b2a05;}
+  .stage{flex:1;min-height:0;position:relative;background:#fff;border-radius:20px;box-shadow:inset 0 0 0 2px #e2e8f0;}
+  .stage svg{width:100%;height:100%;display:block;}
+  .dot{fill:var(--teal-light);stroke:var(--teal);stroke-width:5;cursor:pointer;transition:fill .12s;}
+  .dot.stim{fill:var(--gold);stroke:var(--gold-dark);stroke-width:8;}
+  .dot.ok{fill:#34d399;stroke:#047857;stroke-width:8;}
+  .dot.ng{fill:#fca5a5;stroke:var(--red);stroke-width:8;}
+  .dot.hint{stroke:var(--teal-dark);stroke-width:9;stroke-dasharray:14 10;}
+  .ring{fill:none;stroke:var(--gold);stroke-width:8;pointer-events:none;
+    transform-box:fill-box;transform-origin:center;animation:ping 1s ease-out forwards;}
+  @keyframes ping{0%{transform:scale(1);opacity:.95;}100%{transform:scale(1.55);opacity:0;}}
+  .banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--slate);color:#fff;
+    padding:22px 30px;border-radius:20px;font-size:26px;font-weight:800;text-align:center;line-height:1.5;
+    box-shadow:0 8px 28px rgba(0,0,0,.3);display:none;max-width:90%;}
+  .banner small{display:block;font-size:19px;font-weight:600;color:var(--gold);margin-top:4px;}
+
+  /* ---------- 結果画面 ---------- */
+  #result{align-items:center;overflow-y:auto;padding:24px 16px 40px;}
+  #result h1{margin:8px 0 16px;font-size:26px;color:var(--teal-dark);}
+  .big{display:flex;gap:12px;width:100%;max-width:560px;margin-bottom:14px;}
+  .big .card{flex:1;margin:0;text-align:center;padding:16px 8px;}
+  .big .num{font-size:38px;font-weight:800;color:var(--teal);line-height:1.1;}
+  .big .lbl{font-size:13px;color:var(--slate-light);margin-top:4px;}
+  table{width:100%;border-collapse:collapse;font-size:16px;}
+  th,td{padding:10px 6px;text-align:center;border-bottom:1px solid #e2e8f0;}
+  th{color:var(--slate-light);font-size:13px;font-weight:700;}
+
+  /* ---------- 入力・履歴・確認ダイアログ ---------- */
+  .txt{width:100%;min-height:52px;border:2px solid var(--teal-light);border-radius:14px;padding:0 14px;font-size:18px;
+    color:var(--slate);background:#fff;-webkit-user-select:text;user-select:text;font-family:inherit;}
+  .txt:focus{outline:none;border-color:var(--teal);}
+  #history{align-items:center;overflow-y:auto;padding:24px 16px 40px;}
+  #history h1{margin:8px 0 16px;font-size:26px;color:var(--teal-dark);}
+  #history table{font-size:14px;}
+  #history td.l{text-align:left;}
+  .empty{color:var(--slate-light);text-align:center;padding:16px 0;}
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .modal.open{display:flex;}
+  .modal .box{background:#fff;border-radius:20px;padding:24px 22px;width:100%;max-width:420px;text-align:center;}
+  .modal p{margin:0 0 18px;font-size:20px;font-weight:700;line-height:1.5;}
+  .modal .row{display:flex;gap:10px;}
+  .modal .row button{margin:0;flex:1;min-height:60px;font-size:20px;}
+</style>
+</head>
+<body>
+
+<!-- 設定 -->
+<div id="setup" class="screen active">
+  <h1>ポジション・ワンバック</h1>
+  <p class="sub">光った円の「○つ前」の円をタッチする課題です。<br>連続で成功すると、覚える数が自動で増えます。</p>
+
+  <div class="card">
+    <h2>円の数</h2>
+    <p class="hint">画面にランダムに配置される円の数</p>
+    <div class="seg" data-key="circles">
+      <button data-val="5">5</button><button data-val="7">7</button>
+      <button data-val="10">10</button><button data-val="15">15</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>先行刺激の数（開始時）</h2>
+    <p class="hint">1つ＝ワンバック、2つ＝ツーバック、3つ＝スリーバック</p>
+    <div class="seg" data-key="level">
+      <button data-val="1">1つ</button><button data-val="2">2つ</button><button data-val="3">3つ</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>刺激の自動増加</h2>
+    <p class="hint">「あり」の場合、連続5回成功するごとに先行刺激が1つ増えます（最大5つ）</p>
+    <div class="seg wide" data-key="auto">
+      <button data-val="1">自動で増やす</button><button data-val="0">増やさない</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>試行回数</h2>
+    <p class="hint">タッチする回数（先行刺激だけを見る分は含みません）</p>
+    <div class="seg" data-key="trials">
+      <button data-val="10">10</button><button data-val="20">20</button><button data-val="30">30</button>
+      <button data-val="50">50</button><button data-val="100">100</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>間違えたときの先行刺激</h2>
+    <p class="hint">間違いが続いたら、先行刺激を1つ減らします（最小1つ）。自動増加とは別に設定できます</p>
+    <div class="seg wide" data-key="down">
+      <button data-val="0">減らさない</button><button data-val="1">1回で減らす</button>
+      <button data-val="2">2回連続で</button><button data-val="3">3回連続で</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>実施中の文字の指示</h2>
+    <p class="hint">画面上部に「覚えてください」「○つ前をタッチ」などを表示するか</p>
+    <div class="seg wide" data-key="hint">
+      <button data-val="1">表示する</button><button data-val="0">表示しない</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>お名前・メモ（任意）</h2>
+    <p class="hint">保存する記録に残ります</p>
+    <input type="text" class="txt" id="nameInput" maxlength="30" placeholder="例：YNSG様">
+  </div>
+
+  <button class="btn-main" id="startBtn">スタート</button>
+  <button class="btn-sub" id="historyBtn">保存した記録を見る</button>
+</div>
+
+<!-- 課題 -->
+<div id="game" class="screen">
+  <div class="hud">
+    <button class="quit" id="quitBtn">やめる</button>
+    <div class="chip">試行 <b id="hudTrial">0</b> / <span id="hudTotal">0</span></div>
+    <div class="chip"><b id="hudLevel">1</b>つ前</div>
+    <div class="dots" id="dots"></div>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="stage" id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="banner" id="banner"></div>
+  </div>
+</div>
+
+<!-- 結果 -->
+<div id="result" class="screen">
+  <h1 id="resTitle">おつかれさまでした</h1>
+  <div class="big">
+    <div class="card"><div class="num" id="resAcc">-</div><div class="lbl">正答率</div></div>
+    <div class="card"><div class="num" id="resCount">-</div><div class="lbl">正答数 / 試行数</div></div>
+  </div>
+  <div class="big">
+    <div class="card"><div class="num" id="resLevel">-</div><div class="lbl">到達した先行刺激数</div></div>
+    <div class="card"><div class="num" id="resRt">-</div><div class="lbl">平均反応時間（秒）</div></div>
+  </div>
+  <div class="card">
+    <h2>先行刺激の数ごとの結果</h2>
+    <table>
+      <thead><tr><th>先行刺激</th><th>試行</th><th>正答</th><th>正答率</th></tr></thead>
+      <tbody id="resTable"></tbody>
+    </table>
+  </div>
+  <button class="btn-main" id="saveBtn">結果を保存</button>
+  <button class="btn-sub" id="againBtn">もう一度（同じ設定）</button>
+  <button class="btn-sub" id="toSetupBtn">設定にもどる</button>
+</div>
+
+<!-- 履歴 -->
+<div id="history" class="screen">
+  <h1>保存した記録</h1>
+  <div class="card" id="histCard"></div>
+  <button class="btn-main" id="csvBtn">CSVで書き出し</button>
+  <button class="btn-sub" id="clearBtn">すべて削除</button>
+  <button class="btn-sub" id="histBackBtn">設定にもどる</button>
+</div>
+
+<!-- 確認ダイアログ -->
+<div class="modal" id="modal">
+  <div class="box">
+    <p id="modalText"></p>
+    <div class="row">
+      <button class="btn-sub" id="modalNo">いいえ</button>
+      <button class="btn-main" id="modalYes">はい</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ===== 固定パラメータ ===== */
+  var STREAK_TO_LEVEL_UP = 5;   // 連続成功でレベルアップ
+  var MAX_LEVEL = 5;            // 先行刺激の上限
+  var STIM_MS = 1000;           // 刺激の提示時間
+  var PRIME_GAP_MS = 600;       // 先行刺激どうしの間隔
+  var OK_MS = 800;              // 正解フィードバック
+  var NG_MS = 1500;             // 不正解フィードバック（正解位置を表示）
+  var BANNER_MS = 2200;
+
+  var RADIUS = {5:92, 7:82, 10:70, 15:58};
+
+  var cfg = {circles:10, level:1, auto:1, trials:20, down:0, hint:1};
+
+  function $(id){return document.getElementById(id);}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function show(id){
+    ['setup','game','result','history'].forEach(function(s){$(s).classList.toggle('active', s===id);});
+  }
+
+  /* ===== 保存（この端末のブラウザ内） ===== */
+  var HIST_KEY = 'posOneback.history', NAME_KEY = 'posOneback.name';
+  function loadHist(){
+    try{ var a = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function storeHist(a){
+    try{ localStorage.setItem(HIST_KEY, JSON.stringify(a)); return true; }catch(e){ return false; }
+  }
+  try{ $('nameInput').value = localStorage.getItem(NAME_KEY) || ''; }catch(e){}
+  $('nameInput').addEventListener('input', function(){
+    try{ localStorage.setItem(NAME_KEY, $('nameInput').value); }catch(e){}
+  });
+  function refreshHistBtn(){
+    var n = loadHist().length;
+    $('historyBtn').textContent = '保存した記録を見る' + (n ? '（'+n+'件）' : '');
+  }
+  refreshHistBtn();
+
+  /* ===== アプリ内の確認ダイアログ（confirm()が使えない環境対策） ===== */
+  var modalYes = null;
+  function ask(text, onYes){
+    $('modalText').textContent = text; modalYes = onYes;
+    $('modal').classList.add('open');
+  }
+  $('modalYes').addEventListener('click', function(){
+    $('modal').classList.remove('open');
+    var f = modalYes; modalYes = null; if(f) f();
+  });
+  $('modalNo').addEventListener('click', function(){
+    $('modal').classList.remove('open'); modalYes = null;
+  });
+
+  /* ===== 設定UI ===== */
+  function refreshSeg(){
+    document.querySelectorAll('.seg').forEach(function(seg){
+      var key = seg.getAttribute('data-key');
+      seg.querySelectorAll('button').forEach(function(b){
+        b.classList.toggle('sel', String(cfg[key]) === b.getAttribute('data-val'));
+      });
+    });
+  }
+  document.querySelectorAll('.seg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var key = b.parentNode.getAttribute('data-key');
+      cfg[key] = Number(b.getAttribute('data-val'));
+      refreshSeg();
+    });
+  });
+  refreshSeg();
+
+  /* ===== 円の配置 ===== */
+  var VW = 1000, VH = 700, pts = [];
+  function layout(n){
+    var landscape = window.innerWidth >= window.innerHeight;
+    VW = landscape ? 1000 : 700;
+    VH = landscape ? 700 : 1000;
+    var r = RADIUS[n];
+    var margin = r + 12;
+    for(var gap = 28; gap >= -40; gap -= 6){
+      for(var attempt=0; attempt<60; attempt++){
+        var list = [], ok = true;
+        for(var i=0;i<n && ok;i++){
+          var placed = false;
+          for(var t=0;t<400;t++){
+            var x = margin + Math.random()*(VW-2*margin);
+            var y = margin + Math.random()*(VH-2*margin);
+            var clear = true;
+            for(var j=0;j<list.length;j++){
+              var dx=x-list[j].x, dy=y-list[j].y;
+              if(Math.sqrt(dx*dx+dy*dy) < 2*r+gap){clear=false;break;}
+            }
+            if(clear){list.push({x:x,y:y});placed=true;break;}
+          }
+          if(!placed) ok=false;
+        }
+        if(ok) return list;
+      }
+    }
+    return list;
+  }
+
+  var svg = $('svg'), dotEls = [];
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function buildBoard(){
+    pts = layout(cfg.circles);
+    svg.setAttribute('viewBox','0 0 '+VW+' '+VH);
+    svg.innerHTML = '';
+    dotEls = [];
+    pts.forEach(function(p,i){
+      var c = document.createElementNS(SVGNS,'circle');
+      c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',RADIUS[cfg.circles]);
+      c.setAttribute('class','dot');
+      c.addEventListener('pointerdown', function(e){e.preventDefault(); onTap(i);});
+      svg.appendChild(c);
+      dotEls.push(c);
+    });
+  }
+  function clearMarks(){dotEls.forEach(function(c){c.setAttribute('class','dot');});}
+  function addRing(i){
+    var ring = document.createElementNS(SVGNS,'circle');
+    ring.setAttribute('cx',pts[i].x); ring.setAttribute('cy',pts[i].y);
+    ring.setAttribute('r',RADIUS[cfg.circles]); ring.setAttribute('class','ring');
+    svg.appendChild(ring);
+    setTimeout(function(){if(ring.parentNode) ring.parentNode.removeChild(ring);},1050);
+  }
+
+  /* ===== 課題の進行 ===== */
+  var runId = 0, acceptTap = false, tapResolver = null, t0 = 0;
+  function onTap(i){
+    if(!acceptTap || !tapResolver) return;
+    acceptTap = false;
+    var res = tapResolver; tapResolver = null;
+    res({idx:i, rt:(performance.now()-t0)/1000});
+  }
+  function waitTap(){
+    return new Promise(function(res){
+      tapResolver = res; t0 = performance.now(); acceptTap = true;
+    });
+  }
+
+  function setMsg(text, respond){
+    var m = $('msg'); m.textContent = text; m.classList.toggle('respond', !!respond);
+  }
+  function buildDots(){
+    var d = $('dots'); d.innerHTML = '';
+    d.classList.toggle('off', !cfg.auto);
+    for(var i=0;i<STREAK_TO_LEVEL_UP;i++){d.appendChild(document.createElement('span'));}
+  }
+  function setDots(n){
+    var s = $('dots').children;
+    for(var i=0;i<s.length;i++){s[i].classList.toggle('on', i<n);}
+  }
+
+  var lastSummary = null;
+  async function play(){
+    var my = ++runId;
+    function alive(){return my === runId;}
+
+    buildBoard();
+    buildDots(); setDots(0);
+    $('hudTotal').textContent = cfg.trials;
+    $('hudTrial').textContent = 0;
+    $('hudLevel').textContent = cfg.level;
+    $('banner').style.display = 'none';
+    $('msg').style.display = cfg.hint ? 'flex' : 'none';
+    $('modal').classList.remove('open');
+    acceptTap = false; tapResolver = null;
+    show('game');
+
+    var n = cfg.level, queue = [], last = -1;
+    var done = 0, correct = 0, streak = 0, errStreak = 0, maxLevel = n;
+    var rts = [], byLevel = {};
+
+    setMsg('じゅんびはいいですか？ まもなく始まります');
+    await sleep(1500); if(!alive()) return;
+
+    while(done < cfg.trials){
+      // 次の刺激（直前と同じ円は避ける）
+      var s;
+      do{ s = Math.floor(Math.random()*cfg.circles); }while(s === last && cfg.circles > 1);
+      last = s;
+
+      var needResp = queue.length >= n;
+      if(needResp){
+        setMsg('光った円を見てください', false);
+      }else{
+        setMsg('光った円を覚えてください（'+(queue.length+1)+' / '+n+'）', false);
+      }
+
+      // 刺激提示
+      clearMarks();
+      dotEls[s].classList.add('stim'); addRing(s);
+      await sleep(STIM_MS); if(!alive()) return;
+      dotEls[s].classList.remove('stim');
+
+      if(!needResp){            // 先行刺激：覚えるだけ
+        queue.push(s);
+        await sleep(PRIME_GAP_MS); if(!alive()) return;
+        continue;
+      }
+
+      // 回答：n個前をタッチ
+      var target = queue[0];
+      setMsg(n+'つ前に光った円をタッチ', true);
+      var ans = await waitTap(); if(!alive()) return;
+      var isOk = (ans.idx === target);
+
+      queue.push(s); queue.shift();
+      done++; rts.push(ans.rt);
+      byLevel[n] = byLevel[n] || {t:0,c:0};
+      byLevel[n].t++;
+      if(isOk){ correct++; byLevel[n].c++; streak++; errStreak = 0; } else { streak = 0; errStreak++; }
+      $('hudTrial').textContent = done;
+      setDots(streak);
+
+      if(isOk){
+        dotEls[ans.idx].classList.add('ok');
+        setMsg('せいかい！', false);
+        await sleep(OK_MS);
+      }else{
+        dotEls[ans.idx].classList.add('ng');
+        dotEls[target].classList.add('hint');
+        setMsg('おしい！ 正しい円は点線の円です', false);
+        await sleep(NG_MS);
+      }
+      if(!alive()) return;
+      clearMarks();
+
+      // 先行刺激の増減
+      var change = 0;
+      if(done < cfg.trials){
+        if(cfg.down > 0 && errStreak >= cfg.down && n > 1){
+          n--; change = -1;
+        }else if(cfg.auto && streak >= STREAK_TO_LEVEL_UP && n < MAX_LEVEL){
+          n++; change = 1;
+        }
+      }
+      if(change !== 0){
+        streak = 0; errStreak = 0; maxLevel = Math.max(maxLevel, n);
+        while(queue.length > n) queue.shift();   // 減ったぶんは覚えなくてよい
+        $('hudLevel').textContent = n; setDots(0);
+        var b = $('banner');
+        b.innerHTML = (change > 0 ? '先行刺激が増えます！' : '先行刺激が減ります')
+                    + '<small>これから '+n+'つ前 をタッチ</small>';
+        b.style.display = 'block';
+        setMsg(change > 0 ? '先行刺激が1つ増えました' : '先行刺激が1つ減りました', false);
+        await sleep(BANNER_MS); if(!alive()) return;
+        b.style.display = 'none';
+      }
+    }
+
+    // 結果
+    lastSummary = {done:done, correct:correct, maxLevel:maxLevel, rts:rts, byLevel:byLevel,
+      cfg:{circles:cfg.circles, level:cfg.level, auto:cfg.auto, trials:cfg.trials, down:cfg.down},
+      name:$('nameInput').value.trim(), ts:Date.now()};
+    showResult(lastSummary);
+  }
+
+  function showResult(r){
+    $('saveBtn').disabled = false; $('saveBtn').textContent = '結果を保存';
+    var acc = r.done ? Math.round(r.correct/r.done*100) : 0;
+    var avg = r.rts.length ? (r.rts.reduce(function(a,b){return a+b;},0)/r.rts.length) : 0;
+    $('resAcc').textContent = acc+'%';
+    $('resCount').textContent = r.correct+' / '+r.done;
+    $('resLevel').textContent = r.maxLevel+'つ';
+    $('resRt').textContent = avg.toFixed(1);
+    var html = '';
+    Object.keys(r.byLevel).map(Number).sort(function(a,b){return a-b;}).forEach(function(lv){
+      var d = r.byLevel[lv];
+      html += '<tr><td>'+lv+'つ前</td><td>'+d.t+'</td><td>'+d.c+'</td><td>'+Math.round(d.c/d.t*100)+'%</td></tr>';
+    });
+    $('resTable').innerHTML = html || '<tr><td colspan="4">記録なし</td></tr>';
+    show('result');
+  }
+
+  /* ===== 記録の保存・履歴 ===== */
+  function pad(n){return n<10 ? '0'+n : ''+n;}
+  function fmtDate(ts, full){
+    var d = new Date(ts);
+    return (full ? d.getFullYear()+'/' : '') + (d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function makeRecord(r){
+    var avg = r.rts.length ? r.rts.reduce(function(a,b){return a+b;},0)/r.rts.length : 0;
+    var parts = Object.keys(r.byLevel).map(Number).sort(function(a,b){return a-b;}).map(function(lv){
+      return lv+'つ前:'+r.byLevel[lv].c+'/'+r.byLevel[lv].t;
+    });
+    return {ts:r.ts, name:r.name, circles:r.cfg.circles, startLevel:r.cfg.level, auto:r.cfg.auto, down:r.cfg.down,
+      trials:r.cfg.trials, done:r.done, correct:r.correct, maxLevel:r.maxLevel, avgRt:Math.round(avg*100)/100,
+      levels:parts.join(' ')};
+  }
+  $('saveBtn').addEventListener('click', function(){
+    if(!lastSummary) return;
+    var a = loadHist(); a.push(makeRecord(lastSummary));
+    if(storeHist(a)){
+      $('saveBtn').disabled = true; $('saveBtn').textContent = '保存しました ✓';
+    }else{
+      $('saveBtn').textContent = '保存できませんでした（プライベートブラウズでは使えません）';
+    }
+    refreshHistBtn();
+  });
+
+  function downDesc(d){return d===0 ? '減らさない' : (d===1 ? '1回で減らす' : d+'回連続で減らす');}
+  function renderHistory(){
+    var a = loadHist().slice().reverse();
+    var c = $('histCard');
+    if(!a.length){
+      c.innerHTML = '<div class="empty">保存した記録はまだありません</div>';
+    }else{
+      var h = '<table><thead><tr><th>日時</th><th>お名前</th><th>設定</th><th>正答率</th><th>到達</th></tr></thead><tbody>';
+      a.forEach(function(r){
+        var acc = r.done ? Math.round(r.correct/r.done*100) : 0;
+        h += '<tr><td>'+fmtDate(r.ts,false)+'</td><td class="l">'+esc(r.name||'-')+'</td>'
+          +'<td>円'+r.circles+'／'+r.startLevel+'つ／'+r.done+'回</td><td>'+acc+'%</td><td>'+r.maxLevel+'つ</td></tr>';
+      });
+      c.innerHTML = h + '</tbody></table>';
+    }
+    $('csvBtn').style.display = a.length ? 'block' : 'none';
+    $('clearBtn').style.display = a.length ? 'block' : 'none';
+  }
+  function esc(s){return String(s).replace(/[&<>"]/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+  function csvCell(v){return '"'+String(v).replace(/"/g,'""')+'"';}
+
+  $('csvBtn').addEventListener('click', function(){
+    var a = loadHist();
+    var rows = [['日時','お名前','円の数','開始時の先行刺激','自動増加','間違えたとき','試行回数','実施回数','正答数','正答率(%)','到達した先行刺激','平均反応時間(秒)','先行刺激ごとの正答/試行']];
+    a.forEach(function(r){
+      rows.push([fmtDate(r.ts,true), r.name||'', r.circles, r.startLevel, r.auto?'あり':'なし', downDesc(r.down||0),
+        r.trials, r.done, r.correct, r.done?Math.round(r.correct/r.done*100):0, r.maxLevel, r.avgRt, r.levels]);
+    });
+    var csv = '﻿' + rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var d = new Date();
+    var link = document.createElement('a');
+    link.href = url; link.download = 'position_oneback_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.csv';
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    setTimeout(function(){URL.revokeObjectURL(url);}, 2000);
+  });
+  $('clearBtn').addEventListener('click', function(){
+    ask('保存した記録をすべて削除します。よろしいですか？', function(){
+      storeHist([]); renderHistory(); refreshHistBtn();
+    });
+  });
+
+  /* ===== ボタン ===== */
+  function toSetup(){ runId++; acceptTap = false; tapResolver = null; refreshHistBtn(); show('setup'); }
+  $('startBtn').addEventListener('click', play);
+  $('againBtn').addEventListener('click', play);
+  $('toSetupBtn').addEventListener('click', toSetup);
+  $('histBackBtn').addEventListener('click', toSetup);
+  $('historyBtn').addEventListener('click', function(){ renderHistory(); show('history'); });
+  $('quitBtn').addEventListener('click', function(){
+    ask('課題を中止して設定にもどりますか？', toSetup);
+  });
+})();
+</script>
+</body>
+</html>
